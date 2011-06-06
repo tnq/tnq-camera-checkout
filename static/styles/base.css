@@ -1,0 +1,67 @@
+@import url('http://fonts.googleapis.com/css?family=Lato:100,light,regular,bold,900');
+
+html,body{
+	height:	100%;
+}
+
+img{
+	border: none;
+}
+
+body{
+	font-size:		13px;
+	padding:		0;
+	margin:			0;
+  	font-family: 	'Lato',Helvetica, Arial, sans-serif;
+  	font-weight: 	900;
+  	letter-spacing: 0;
+	color: 			#2c2c2c;
+	
+	/* Moz */
+	background: -moz-linear-gradient( bottom center, rgba(225,225,225,1) 0 , rgba(252,252,252,1) 50%) no-repeat rgba(252,252,252,1);
+	
+	/* Webkit */
+	background: -webkit-gradient( linear, center bottom, center top, color-stop( 0, rgba(225,225,225,1) ), color-stop( .5, rgba(252,252,252,1) ) ) no-repeat rgba(252,252,252,1);
+}
+
+#content{
+	width: 800px;
+	height: 480px;
+	margin: 0 auto;
+}
+
+.task-selector{
+	width: 	760px;
+	margin: 0 auto;
+	padding-top:23px;
+}
+
+.task-selector div{
+	width:	374px;
+	height:	433px;
+	background-color: #2c2c2c;
+	color: #ffffff;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+}
+
+.task-selector .borrow{
+	background-color: #0099FF;
+	float: left;
+}
+
+.task-selector .return{
+	background-color: #FF9900;
+	float: right;
+}
+
+.task-selector div a{
+	color: #ffffff;
+	font-size: 4em;
+	display: block;
+	text-align: center;
+	width:374px;
+	text-decoration: none;
+	padding-top: 185px;
+	padding-bottom: 186px;
+}

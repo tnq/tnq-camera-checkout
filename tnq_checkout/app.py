@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import os
+import datetime
 from nagare import presentation, component, util, var
 from .models import *
 
@@ -9,11 +10,43 @@ class TaskSelector(object):
 
 @presentation.render_for(TaskSelector)
 def render(self, h, comp, *args):
-    with h.div(class_='big-button'):
-        h << h.a('Borrow Equipment').action(lambda: comp.answer("borrow"))
-    with h.div(class_='big-button'):
-        h << h.a('Return Equipment').action(lambda: comp.answer("return"))
+    with h.div(class_='task-selector ui-helper-clearfix'):
+        with h.div(class_='borrow'):
+            h << h.a('borrow').action(lambda: comp.answer("borrow"))
+        with h.div(class_='return'):
+            h << h.a('return').action(lambda: comp.answer("return"))
+    return h.root
 
+class Confirm(object):
+    """Display a confirmation message, with buttons
+    """
+
+    def __init__(self, msg, buttons = ["ok"]):
+        """Initialization
+
+        In:
+          - ``msg`` -- message to display
+        """
+        self.msg = msg
+        self.buttons = buttons
+
+@presentation.render_for(Confirm)
+def render(self, h, comp, *args):
+    """The view is a simple form with the text and multiple submit buttons
+
+    In:
+      - ``h`` -- the renderer
+      - ``comp`` -- the component
+      - ``model`` -- the name of the view
+
+    Return:
+      - a tree
+    """
+    with h.form:
+        h << self.msg
+        h << h.br
+        for i, button in enumerate(self.buttons):
+            h << h.input(type='submit', value=button).action(lambda i=i: comp.answer(i))
     return h.root
 
 class ScanBarcode(object):
@@ -21,20 +54,27 @@ class ScanBarcode(object):
         self.message = message
     def handle_scan(self, comp, barcode):
         pass
+
 @presentation.render_for(ScanBarcode)
 def render(self, h, comp, *args):
     r = var.Var()
-    return h.form(
+    h.head.javascript_url('https://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js')
+    h << h.script('''$(function(){
+                    $('#barcodeInput').focus();
+                    });''', type='text/javascript')
+    h << h.form(
                   self.message, ' ',
-                  h.input.action(r),
+                  h.input(id='barcodeInput').action(r),
                   h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r()))
                  ) 
+    return h.root
 
 class ScanUserBarcode(ScanBarcode):
     def handle_scan(self, comp, barcode):
         user = User.get_by(barcode_id=barcode)
         if user:
             comp.answer(user)
+
 class ScanEquipmentBarcode(ScanBarcode):
     def handle_scan(self, comp, barcode):
         equip = Equipment.get_by(barcode_id=barcode)
@@ -50,7 +90,7 @@ def render(self, h, comp, *args):
     with h.table:
         for u in users:
             with h.tr:
-                h << h.td(h.a(u.first_name + " " + u.last_name).action(lambda: comp.answer(u)))
+                h << h.td(h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u)))
     return h.root
 
 class SelectUser(object):
@@ -108,8 +148,27 @@ class RootView(component.Task):
                 else:
                     staph_user = comp.call(SelectUser())
                     items = comp.call(SelectEquipment())
-                    comp.call(util.Confirm("Manboard member "+manboard_user.full_name+" checking out equipment for "+staph_user.full_name+": "+items))
-            comp.call(util.Confirm(task))
+                    for item in items:
+                        existing_checkout = Checkout.get_by(equipment=item,date_in=None)
+                        if existing_checkout:
+                            choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
+                                                       (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
+                                                       buttons=["Yes", "No"]))
+                            if choice == 0:
+                                existing_checkout.date_in = datetime.datetime.now()
+                            else:
+                                continue
+                        checkout = Checkout()
+                        checkout.user = staph_user
+                        checkout.equipment = item
+                        checkout.manboard_member = manboard_user
+                        checkout.date_out = datetime.datetime.now()
+            elif task == "return":
+                returned_items = comp.call(SelectEquipment())
+                for returned_item in returned_items:
+                    checkout = Checkout.get_by(equipment=returned_item,date_in=None)
+                    if checkout:
+                        checkout.date_in = datetime.datetime.now()
 
 class Tnq_checkout(object):
     def __init__(self):
@@ -117,14 +176,12 @@ class Tnq_checkout(object):
 
 @presentation.render_for(Tnq_checkout)
 def render(self, h, *args):
-    h.head.css_url('/static/nagare/application.css')
-    h.head << h.head.title('Up and Running !')
+    h.head.css_url('/static/tnq_checkout/styles/jquery-ui-core.css')
+    h.head.css_url('/static/tnq_checkout/styles/base.css')
+    h.head << h.head.title('Technique Checkout')
 
-    with h.div(class_='mybody'):
-        with h.div(id='main'):
-            h << self.body
-
-    h << h.div(class_='footer')
+    with h.div(id='content'):
+        h << self.body
 
     return h.root
 

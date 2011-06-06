@@ -32,7 +32,7 @@ class Equipment(Entity):
     """
     barcode_id = Field(String(7),required=True,unique=True)
     barcode_id.__doc__ = "(required) 7 digit string starting with TNQ and ending with 4 numbers. Ex: TNQ1234"
-    equip_type = Field(Enum([u'CAMERA', u'LENS', u'MEMORY', u'EXTERNAL_FLASH', u'STROBE', u'TRIPOD', u'MONOPOD', u'ACCESSORY',None]),required=True)
+    equip_type = Field(Enum([u'CAMERA', u'LENS', u'MEMORY', u'EXTERNAL_FLASH', u'STROBE', u'TRIPOD', u'MONOPOD', u'ACCESSORY',u'35MM_CAMERA',u'MEDIUM_FORMAT_CAMERA',u'LARGE_FORMAT_CAMERA',None]),required=True)
     pet_name = Field(String(30))
     pet_name.__doc__ = "(optional) The name given to the equipment by TNQ Staph."
     brand = Field(String(30),required=True)
@@ -41,6 +41,8 @@ class Equipment(Entity):
     manual_link = Field(String(256))
     manual_link.__doc__ = "link to the pdf manual of the equipment"
     checkouts = OneToMany('Checkout')
+    serial = Field(String(128))
+    notes = Field(String(500))
 
 class Checkout(Entity):
     user = ManyToOne('User')

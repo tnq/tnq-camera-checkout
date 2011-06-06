@@ -142,33 +142,55 @@ class RootView(component.Task):
         while True:
             task = comp.call(TaskSelector())
             if task == "borrow":
-                manboard_user = comp.call(ScanUserBarcode("Scan manboard member's barcode"))
-                if manboard_user.user_type != u'MANBOARD':
-                    comp.call(util.Confirm("You must be a manboard member to authorize a checkout."))
-                else:
-                    staph_user = comp.call(SelectUser())
-                    items = comp.call(SelectEquipment())
-                    for item in items:
-                        existing_checkout = Checkout.get_by(equipment=item,date_in=None)
-                        if existing_checkout:
-                            choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
-                                                       (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
-                                                       buttons=["Yes", "No"]))
-                            if choice == 0:
-                                existing_checkout.date_in = datetime.datetime.now()
-                            else:
-                                continue
-                        checkout = Checkout()
-                        checkout.user = staph_user
-                        checkout.equipment = item
-                        checkout.manboard_member = manboard_user
-                        checkout.date_out = datetime.datetime.now()
+                comp.call(TaskWrapper("borrow", component.Component(BorrowTask())))
             elif task == "return":
-                returned_items = comp.call(SelectEquipment())
-                for returned_item in returned_items:
-                    checkout = Checkout.get_by(equipment=returned_item,date_in=None)
-                    if checkout:
-                        checkout.date_in = datetime.datetime.now()
+                comp.call(TaskWrapper("return", component.Component(ReturnTask())))
+
+class BorrowTask(component.Task):
+    def go(self, comp):
+        manboard_user = comp.call(ScanUserBarcode("Scan manboard member's barcode"))
+        if manboard_user.user_type != u'MANBOARD':
+            comp.call(util.Confirm("You must be a manboard member to authorize a checkout."))
+        else:
+            staph_user = comp.call(SelectUser())
+            items = comp.call(SelectEquipment())
+            for item in items:
+                existing_checkout = Checkout.get_by(equipment=item,date_in=None)
+                if existing_checkout:
+                    choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
+                                               (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
+                                               buttons=["Yes", "No"]))
+                    if choice == 0:
+                        existing_checkout.date_in = datetime.datetime.now()
+                    else:
+                        continue
+                checkout = Checkout()
+                checkout.user = staph_user
+                checkout.equipment = item
+                checkout.manboard_member = manboard_user
+                checkout.date_out = datetime.datetime.now()
+
+class ReturnTask(component.Task):
+    def go(self, comp):
+        returned_items = comp.call(SelectEquipment())
+        for returned_item in returned_items:
+            checkout = Checkout.get_by(equipment=returned_item,date_in=None)
+            if checkout:
+                checkout.date_in = datetime.datetime.now()
+
+class TaskWrapper(object):
+    def __init__(self, label, body):
+        self.label = label
+        self.body = body
+
+@presentation.render_for(TaskWrapper)
+def render(self, h, comp, *args):
+    with h.div(id='header'):
+        h << self.label
+        h << h.a("cancel").action(lambda: comp.answer())
+    h << self.body
+
+    return h.root
 
 class Tnq_checkout(object):
     def __init__(self):

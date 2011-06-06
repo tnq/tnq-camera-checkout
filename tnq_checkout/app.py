@@ -42,9 +42,8 @@ def render(self, h, comp, *args):
     Return:
       - a tree
     """
-    with h.form:
-        h << self.msg
-        h << h.br
+    with h.form(class_="default"):
+        h << h.div(self.msg, class_="message")
         for i, button in enumerate(self.buttons):
             h << h.input(type='submit', value=button).action(lambda i=i: comp.answer(i))
     return h.root
@@ -58,14 +57,14 @@ class ScanBarcode(object):
 @presentation.render_for(ScanBarcode)
 def render(self, h, comp, *args):
     r = var.Var()
-    h.head.javascript_url('https://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js')
     h << h.script('''$(function(){
                     $('#barcodeInput').focus();
                     });''', type='text/javascript')
     h << h.form(
-                  self.message, ' ',
+                  h.div(self.message, class_="message"),
                   h.input(id='barcodeInput').action(r),
-                  h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r()))
+                  h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r())),
+                  class_="barcode-default"
                  ) 
     return h.root
 
@@ -74,6 +73,22 @@ class ScanUserBarcode(ScanBarcode):
         user = User.get_by(barcode_id=barcode)
         if user:
             comp.answer(user)
+
+@presentation.render_for(ScanUserBarcode, "manboard")
+def render(self, h, comp, *args):
+    r = var.Var()
+    h << h.script('''$(function(){
+                    $('#barcodeInput').focus();
+                    });''', type='text/javascript')
+    h << h.img(src="/static/tnq_checkout/images/mitcard.png", alt="mit card", id="id-card")
+    h << h.form(
+                  h.div(self.message,class_="message"),
+                  h.div("Typically, the barcode on the back of an MIT ID card.",class_="subline"),
+                  h.input(id='barcodeInput').action(r),
+                  h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r())),
+                  class_="manboard"
+                 ) 
+    return h.root
 
 class ScanEquipmentBarcode(ScanBarcode):
     def handle_scan(self, comp, barcode):
@@ -148,9 +163,9 @@ class RootView(component.Task):
 
 class BorrowTask(component.Task):
     def go(self, comp):
-        manboard_user = comp.call(ScanUserBarcode("Scan manboard member's barcode"))
+        manboard_user = comp.call(ScanUserBarcode("Scan manboard member's barcode"), model="manboard")
         if manboard_user.user_type != u'MANBOARD':
-            comp.call(util.Confirm("You must be a manboard member to authorize a checkout."))
+            comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
             staph_user = comp.call(SelectUser())
             items = comp.call(SelectEquipment())
@@ -185,9 +200,9 @@ class TaskWrapper(object):
 
 @presentation.render_for(TaskWrapper)
 def render(self, h, comp, *args):
-    with h.div(id='header'):
-        h << self.label
+    with h.div(id='header',class_=self.label+" ui-helper-clearfix"):
         h << h.a("cancel").action(lambda: comp.answer())
+        h << h.div(self.label, class_="task")
     h << self.body
 
     return h.root
@@ -200,6 +215,7 @@ class Tnq_checkout(object):
 def render(self, h, *args):
     h.head.css_url('/static/tnq_checkout/styles/jquery-ui-core.css')
     h.head.css_url('/static/tnq_checkout/styles/base.css')
+    h.head.javascript_url('https://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js')
     h.head << h.head.title('Technique Checkout')
 
     with h.div(id='content'):

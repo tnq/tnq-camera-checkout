@@ -24,6 +24,50 @@ body{
 	background: -webkit-gradient( linear, center bottom, center top, color-stop( 0, rgba(225,225,225,1) ), color-stop( .5, rgba(252,252,252,1) ) ) no-repeat rgba(252,252,252,1);
 }
 
+#header{
+	height: 44px;
+}
+
+#header .task{
+	width: 661px;
+	padding-left:7px;
+	height:44px;
+	color: #ffffff;
+	line-height: .85em;
+	font-size: 3.55em;
+	float:left;
+}
+
+#header a{
+	display: block;
+	float: right;
+	width: 116px;
+	height: 44px;
+	color: #ffffff;
+	text-decoration: none;
+	background-color: #FF0000;
+	
+	-moz-border-radius-bottomleft: 8px;
+	-moz-border-radius-bottomright: 8px;
+	border-bottom-right-radius: 8px;
+	border-bottom-left-radius: 8px;
+	
+	font-weight: 300;
+	font-size: 3em;
+	
+	padding-left:10px;
+	
+	line-height: 1em;
+}
+
+#header a:visited{
+	color: #ffffff;
+}
+
+#header.borrow .task{
+	background-color: #0099FF;
+}
+
 #content{
 	width: 800px;
 	height: 480px;
@@ -64,4 +108,51 @@ body{
 	text-decoration: none;
 	padding-top: 185px;
 	padding-bottom: 186px;
+}
+
+.task-selector div a:visited{
+	color: #ffffff;
+}
+
+#id-card{
+	width:	305px;
+	height: 184px;
+	
+	margin-top: 76px;
+	margin-left: 452px;
+}
+
+form .message{
+	font-size: 3.55em;
+	font-weight:300;
+}
+
+form.default .message{
+	margin: 0 50px;
+	margin-top: 30px;
+	margin-bottom: 20px;
+}
+
+form.default input[type="submit"]{
+	background-color: #33CC00;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+	padding: .2em .5em;
+	border: none;
+	color: #ffffff;
+	font-size: 3.5em;
+	font-weight:900;
+	margin-left:50px;
+}
+
+form.manboard .message{
+	text-transform: lowercase;
+	margin-left:36px;
+	margin-top:50px;
+}
+
+form.manboard .subline{
+	margin-left:36px;
+	font-size:1.5em;
+	font-weight:500;
 }

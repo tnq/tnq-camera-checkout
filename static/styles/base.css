@@ -72,6 +72,8 @@ body{
 	width: 800px;
 	height: 480px;
 	margin: 0 auto;
+	border:1px solid black;
+	overflow: hidden;
 }
 
 .task-selector{
@@ -122,18 +124,19 @@ body{
 	margin-left: 452px;
 }
 
-form .message{
+form.confirm .message,
+form.manboard .message-0{
 	font-size: 3.55em;
 	font-weight:300;
 }
 
-form.default .message{
+form.confirm .message{
 	margin: 0 50px;
 	margin-top: 30px;
 	margin-bottom: 20px;
 }
 
-form.default input[type="submit"]{
+form.confirm input[type="submit"]{
 	background-color: #33CC00;
 	-moz-border-radius: 10px;
 	border-radius: 10px;
@@ -145,14 +148,130 @@ form.default input[type="submit"]{
 	margin-left:50px;
 }
 
-form.manboard .message{
+form.manboard .message-0{
 	text-transform: lowercase;
 	margin-left:36px;
 	margin-top:50px;
 }
 
-form.manboard .subline{
+form.manboard .message-1{
 	margin-left:36px;
 	font-size:1.5em;
 	font-weight:500;
 }
+
+form.barcode .message-0{
+	color: #0099FF;
+	font-size: 1.5em;
+	font-weight: 400;
+	margin-left: 8px;
+	margin-top:5px;
+}
+
+form.barcode .message-0 strong{
+	font-weight: 900;
+}
+
+form.barcode .message-1{
+	font-size: 3em;
+	font-weight: 300;
+	text-transform: lowercase;
+	margin-top: 5px;
+	text-align: right;
+	margin-right:20px;
+}
+
+.finish-checkout{
+	background-color: #33CC00;
+}
+
+.finish-checkout a{
+	display: block;
+	color: #ffffff;
+	text-decoration: none;
+	font-weight:900;
+	font-size:2.5em;
+	text-align: center;
+	padding: .4em 0;
+	text-transform: lowercase;
+}
+
+
+/** scrollview **/
+
+.scrollview-container{
+	width: 800px;
+	height: 348px;
+	overflow:hidden;
+	
+	border-top:5px solid #666666;
+}
+
+.scrollview-container.equipment{
+	height: 285px;
+}
+
+.scrollview-item{
+	border-bottom: 1px solid #cccccc;
+	
+	font-size:2.55em;
+	font-weight:500;
+	
+	/* Moz */
+	background: -moz-linear-gradient( bottom center, rgba(247,247,247,1) 0 , rgba(255,255,255,1) 50%, rgba(247,247,247,1) 100%) no-repeat rgba(247,247,247,1);
+	
+	/* Webkit */
+	background: -webkit-gradient( linear, center bottom, center top, color-stop( 0, rgba(247,247,247,1) ), color-stop( .5, rgba(255,255,255,1) ), color-stop( .98, rgba(250,250,250,1) ), color-stop( 1, rgba(255,255,255,1) ) ) no-repeat rgba(247,247,247,1);
+}
+
+.scrollview-item a,
+.scrollview-item a:visited{
+	display: block;
+	color: #2c2c2c;
+	text-decoration: none;
+	padding: .5em 1em;
+}
+
+.equipment .scrollview-item div{
+	display: inline-table;
+	padding: 1.1em 0.5em;
+	border-right: 1px solid #cccccc;
+	font-size: .8em;
+	vertical-align: middle;
+	width: 599px;
+}
+
+.equipment .scrollview-item a{
+	display:inline-table;
+	padding: .75em 0;
+	width: 88px;
+	text-align:center;
+	font-weight:900;
+	vertical-align: middle;
+}
+
+.equipment .scrollview-item img.icon{
+	margin-left:16px;
+	display:inline-table;
+	vertical-align: middle;
+}
+
+a:active{
+	color: #cccccc;
+	
+	background: #666666;
+}
+
+input[type="text"]{
+	position:absolute;
+	top:0;
+	left:0;
+}
+
+input[type="submit"].hidden-action{
+	position: absolute;
+	top:30px;
+	left:0;
+}
+
+

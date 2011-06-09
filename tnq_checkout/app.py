@@ -4,6 +4,7 @@ import os
 import datetime
 from nagare import presentation, component, util, var
 from .models import *
+from .barcode import *
 
 class TaskSelector(object):
     pass
@@ -42,59 +43,11 @@ def render(self, h, comp, *args):
     Return:
       - a tree
     """
-    with h.form(class_="default"):
+    with h.form(class_="confirm"):
         h << h.div(self.msg, class_="message")
         for i, button in enumerate(self.buttons):
             h << h.input(type='submit', value=button).action(lambda i=i: comp.answer(i))
     return h.root
-
-class ScanBarcode(object):
-    def __init__(self, message):
-        self.message = message
-    def handle_scan(self, comp, barcode):
-        pass
-
-@presentation.render_for(ScanBarcode)
-def render(self, h, comp, *args):
-    r = var.Var()
-    h << h.script('''$(function(){
-                    $('#barcodeInput').focus();
-                    });''', type='text/javascript')
-    h << h.form(
-                  h.div(self.message, class_="message"),
-                  h.input(id='barcodeInput').action(r),
-                  h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r())),
-                  class_="barcode-default"
-                 ) 
-    return h.root
-
-class ScanUserBarcode(ScanBarcode):
-    def handle_scan(self, comp, barcode):
-        user = User.get_by(barcode_id=barcode)
-        if user:
-            comp.answer(user)
-
-@presentation.render_for(ScanUserBarcode, "manboard")
-def render(self, h, comp, *args):
-    r = var.Var()
-    h << h.script('''$(function(){
-                    $('#barcodeInput').focus();
-                    });''', type='text/javascript')
-    h << h.img(src="/static/tnq_checkout/images/mitcard.png", alt="mit card", id="id-card")
-    h << h.form(
-                  h.div(self.message,class_="message"),
-                  h.div("Typically, the barcode on the back of an MIT ID card.",class_="subline"),
-                  h.input(id='barcodeInput').action(r),
-                  h.input(type='submit', value='Send').action(lambda: self.handle_scan(comp, r())),
-                  class_="manboard"
-                 ) 
-    return h.root
-
-class ScanEquipmentBarcode(ScanBarcode):
-    def handle_scan(self, comp, barcode):
-        equip = Equipment.get_by(barcode_id=barcode)
-        if equip:
-            comp.answer(equip)
 
 class UserList(object):
     pass
@@ -102,18 +55,23 @@ class UserList(object):
 @presentation.render_for(UserList)
 def render(self, h, comp, *args):
     users = User.query.order_by(User.last_name, User.first_name)
-    with h.table:
-        for u in users:
-            with h.tr:
-                h << h.td(h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u)))
+    
+    h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
+    h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
+    
+    with h.div(class_="scrollview-container",scrollviewbars="vertical",scrollviewmode="table",scrollviewenabledscrollx="no"):
+        with h.div(class_="scrollview-content"):
+            for u in users:
+                with h.div(class_="scrollview-item"):
+                    h << h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u))
     return h.root
 
-class SelectUser(object):
-    def __init__(self):
-        self.scan = component.Component(ScanUserBarcode("Select user or scan user's barcode"))
+class SelectStaph(object):
+    def __init__(self, manboard_name):
+        self.scan = component.Component(ScanUserBarcode(["<strong>"+manboard_name+"</strong> is checking out equipment for...","Select staph below or scan MIT ID"]))
         self.list = component.Component(UserList())
 
-@presentation.render_for(SelectUser)
+@presentation.render_for(SelectStaph)
 def render(self, h, comp, *args):
     self.scan.on_answer(comp.answer)
     self.list.on_answer(comp.answer)
@@ -125,8 +83,8 @@ def render(self, h, comp, *args):
     return h.root
 
 class SelectEquipment(object):
-    def __init__(self):
-        self.scan = component.Component(ScanEquipmentBarcode("Scan the barcode for each piece of equipment to add it to your checkout"))
+    def __init__(self, manboard_name="", staph_name=""):
+        self.scan = component.Component(ScanEquipmentBarcode(["<strong>"+manboard_name+"</strong> is checking out equipment for <strong>"+staph_name+"</strong>.","scan equipment"]))
         self.equipment = []
         self.scan.on_answer(self.add_equipment)
 
@@ -140,15 +98,20 @@ class SelectEquipment(object):
 @presentation.render_for(SelectEquipment)
 def render(self, h, comp, *args):
     h << self.scan
-    h << h.h1("Current equipment list")
-    with h.table:
-        for e in self.equipment:
-            with h.tr:
-                with h.td:
-                    h << "%s (%s %s)" % (e.pet_name, e.brand, e.model)
-                with h.td:
-                    h << h.a("Remove").action(lambda: self.remove_equipment(e))
-    h << h.a("Finish checkout").action(lambda: comp.answer(self.equipment))
+    
+    h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
+    h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
+    
+    with h.div(class_="scrollview-container equipment",scrollviewbars="vertical",scrollviewmode="table",scrollviewenabledscrollx="no"):
+        with h.div(class_="scrollview-content"):
+            for e in self.equipment:
+                with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
+                    h << h.img(src="/static/tnq_checkout/images/icons/"+e.equip_type+".svg", width="91", height="80",class_="icon")
+                    with h.div:
+                        h << h.parse_htmlstring("%s %s <strong>%s</strong>" % (e.brand, e.model, e.pet_name),fragment=True)
+                    h << h.a("X").action(lambda: self.remove_equipment(e))
+    with h.div(class_="finish-checkout"):
+        h << h.a("Finish checkout").action(lambda: comp.answer(self.equipment))
 
     return h.root
 
@@ -163,12 +126,12 @@ class RootView(component.Task):
 
 class BorrowTask(component.Task):
     def go(self, comp):
-        manboard_user = comp.call(ScanUserBarcode("Scan manboard member's barcode"), model="manboard")
+        manboard_user = comp.call(ScanUserBarcode(["Scan manboard member's barcode", "Typically, the barcode on the back of an MIT ID card."]), model="manboard")
         if manboard_user.user_type != u'MANBOARD':
             comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
-            staph_user = comp.call(SelectUser())
-            items = comp.call(SelectEquipment())
+            staph_user = comp.call(SelectStaph(manboard_user.full_name))
+            items = comp.call(SelectEquipment(manboard_user.full_name, staph_user.full_name))
             for item in items:
                 existing_checkout = Checkout.get_by(equipment=item,date_in=None)
                 if existing_checkout:

@@ -2,3 +2,4 @@
 *.egg-info
 data/tnq_checkout.db
 *~
+.DS_Store

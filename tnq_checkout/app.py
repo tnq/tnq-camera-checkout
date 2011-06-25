@@ -2,7 +2,7 @@ from __future__ import with_statement
 
 import os
 import datetime
-from nagare import presentation, component, util, var
+from nagare import presentation, component, util, var, log
 from .models import *
 from .barcode import *
 
@@ -59,7 +59,7 @@ def render(self, h, comp, *args):
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
-    with h.div(class_="scrollview-container",scrollviewbars="vertical",scrollviewmode="table",scrollviewenabledscrollx="no"):
+    with h.div(class_="scrollview-container",scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
         with h.div(class_="scrollview-content"):
             for u in users:
                 with h.div(class_="scrollview-item"):
@@ -90,7 +90,7 @@ class SelectEquipment(object):
 
     def add_equipment(self, equipment):
         if equipment not in self.equipment:
-            self.equipment.append(equipment)
+            self.equipment.insert(0, equipment)
 
     def remove_equipment(self, equipment):
         self.equipment.remove(equipment)
@@ -102,14 +102,18 @@ def render(self, h, comp, *args):
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
-    with h.div(class_="scrollview-container equipment",scrollviewbars="vertical",scrollviewmode="table",scrollviewenabledscrollx="no"):
+    with h.div(class_="scrollview-container equipment",scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
         with h.div(class_="scrollview-content"):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
                     h << h.img(src="/static/tnq_checkout/images/icons/"+e.equip_type+".svg", width="91", height="80",class_="icon")
                     with h.div:
-                        h << h.parse_htmlstring("%s %s <strong>%s</strong>" % (e.brand, e.model, e.pet_name),fragment=True)
-                    h << h.a("X").action(lambda: self.remove_equipment(e))
+                        h << e.brand
+                        h << " "
+                        h << e.model
+                        h << " "
+                        h << h.strong(e.pet_name)
+                    h << h.a("X").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
         h << h.a("Finish checkout").action(lambda: comp.answer(self.equipment))
 
@@ -160,9 +164,12 @@ class TaskWrapper(object):
     def __init__(self, label, body):
         self.label = label
         self.body = body
+        #self.body.on_answer(lambda r:self.answer(r))
 
 @presentation.render_for(TaskWrapper)
 def render(self, h, comp, *args):
+    if not self.body._channel:
+        self.body._channel = comp._channel
     with h.div(id='header',class_=self.label+" ui-helper-clearfix"):
         h << h.a("cancel").action(lambda: comp.answer())
         h << h.div(self.label, class_="task")
@@ -179,6 +186,8 @@ def render(self, h, *args):
     h.head.css_url('/static/tnq_checkout/styles/jquery-ui-core.css')
     h.head.css_url('/static/tnq_checkout/styles/base.css')
     h.head.javascript_url('https://ajax.googleapis.com/ajax/libs/jquery/1.6.0/jquery.min.js')
+    h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
+    h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     h.head << h.head.title('Technique Checkout')
 
     with h.div(id='content'):

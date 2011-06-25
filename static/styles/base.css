@@ -72,7 +72,7 @@ body{
 	width: 800px;
 	height: 480px;
 	margin: 0 auto;
-	border:1px solid black;
+	/**border:1px solid black;*/
 	overflow: hidden;
 }
 
@@ -238,7 +238,7 @@ form.barcode .message-1{
 	border-right: 1px solid #cccccc;
 	font-size: .8em;
 	vertical-align: middle;
-	width: 599px;
+	width: 571px;
 }
 
 .equipment .scrollview-item a{

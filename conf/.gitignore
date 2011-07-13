@@ -1,0 +1,2 @@
+# Don't include the production config file with passwords
+prod.cfg

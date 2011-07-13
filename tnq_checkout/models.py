@@ -12,17 +12,32 @@ class User(Entity):
     Users can be split into two types, manboard or staph. Staph can only be responsible for equipment checked out, but
     manboard users can actually go through the checkout procedure.
     """
-    barcode_id = Field(String(9),required=True,unique=True)
-    barcode_id.__doc__ = "(required) MIT ID number"
-    user_type = Field(Enum([u'STAPH', u'MANBOARD',None]),required=True,default=u'STAPH')
+    using_options(tablename="auth_user")
+
+    username = Field(String(30),required=True)
+    username.__doc__ = "MIT kerberos name"
+
     first_name = Field(String(30),required=True)
     last_name = Field(String(30),required=True)
     full_name = ColumnProperty(lambda c: c.first_name + " " + c.last_name)
-    krb_name = Field(String(8))
-    krb_name.__doc__ = "(optional) MIT kerberos name, if available."
-    phone = Field(String(20))
-    email = Field(String(254),required=True)
+
+    email = Field(String(75),required=True)
     email.__doc__ = "The user's email can be something other than @mit.edu."
+
+    password = Field(String(128),required=True)
+
+    is_staff = Field(Boolean,required=True)
+    is_active = Field(Boolean,required=True)
+    is_superuser = Field(Boolean,required=True)
+
+    last_login = Field(DATETIME,required=True)
+    date_joined = Field(DATETIME,required=True)
+
+    barcode_id = Field(String(9),required=False,unique=True)
+    barcode_id.__doc__ = "MIT ID number"
+
+    phone = Field(String(20))
+
     checkouts = OneToMany('Checkout', inverse='user')
 
 class Equipment(Entity):
@@ -30,6 +45,7 @@ class Equipment(Entity):
     
     Equipment can be anything we slap a barcode on...cameras, tripods, batteries, memory, lighting, umbrellas, whatever...
     """
+    using_options(tablename="checkout_equipment")
     barcode_id = Field(String(7),required=True,unique=True)
     barcode_id.__doc__ = "(required) 7 digit string starting with TNQ and ending with 4 numbers. Ex: TNQ1234"
     equip_type = Field(Enum([u'CAMERA', u'LENS', u'MEMORY', u'EXTERNAL_FLASH', u'STROBE', u'TRIPOD', u'MONOPOD', u'ACCESSORY',u'35MM_CAMERA',u'MEDIUM_FORMAT_CAMERA',u'LARGE_FORMAT_CAMERA',u'SNAX',None]),required=True)
@@ -45,10 +61,11 @@ class Equipment(Entity):
     notes = Field(String(500))
 
 class Checkout(Entity):
+    using_options(tablename="checkout_checkout")
     user = ManyToOne('User')
     equipment = ManyToOne('Equipment')
     manboard_member = ManyToOne('User')
     manboard_member.__doc__ = "the manboard member who checked out the equipment for the staph"
-    date_out = Field(DateTime)
-    date_in = Field(DateTime)
+    date_out = Field(DATETIME)
+    date_in = Field(DATETIME)
 

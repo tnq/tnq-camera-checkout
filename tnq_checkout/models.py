@@ -1,6 +1,14 @@
 from elixir import *
+import sqlalchemy
 from sqlalchemy import MetaData
 from sqlextensions import Enum
+
+old_create_engine = sqlalchemy.create_engine
+def my_create_engine(*args, **kwargs):
+    if 'pool_recycle' in kwargs:
+        kwargs['pool_recycle'] = int(kwargs['pool_recycle'])
+    return old_create_engine(*args, **kwargs)
+sqlalchemy.create_engine = my_create_engine
 
 __metadata__ = MetaData()
 

@@ -14,12 +14,9 @@ __metadata__ = MetaData()
 
 # Here, put the definition of your Elixir or SQLAlchemy models
 
-class User(Entity):
-    """User: The person who will be checking out equipment.
-    
-    Users can be split into two types, manboard or staph. Staph can only be responsible for equipment checked out, but
-    manboard users can actually go through the checkout procedure.
-    """
+# Django base user class
+class AuthUser(Entity):
+    """AuthUser: Django's identity class."""
     using_options(tablename="auth_user")
 
     username = Field(String(30),required=True)
@@ -40,6 +37,14 @@ class User(Entity):
 
     last_login = Field(DATETIME,required=True)
     date_joined = Field(DATETIME,required=True)
+
+class User(AuthUser):
+    """User: The person who will be checking out equipment.
+
+    Users can be split into two types, manboard or staph. Staph can only be responsible for equipment checked out, but
+    manboard users can actually go through the checkout procedure.
+    """
+    using_options(tablename="checkout_user", inheritance="multi", polymorphic=False)
 
     barcode_id = Field(String(9),required=False,unique=True)
     barcode_id.__doc__ = "MIT ID number"

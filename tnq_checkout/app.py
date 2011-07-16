@@ -6,7 +6,10 @@ from nagare import presentation, component, util, var, log
 from .models import *
 from .barcode import *
 
+
 class TaskSelector(object):
+    """ TaskSelector provides the choice to either "borrow" or "return" equipment
+    """
     pass
 
 @presentation.render_for(TaskSelector)
@@ -18,10 +21,11 @@ def render(self, h, comp, *args):
             h << h.a('return').action(lambda: comp.answer("return"))
     return h.root
 
+
+
 class Confirm(object):
     """Display a confirmation message, with buttons
     """
-
     def __init__(self, msg, buttons = ["ok"]):
         """Initialization
 
@@ -49,7 +53,10 @@ def render(self, h, comp, *args):
             h << h.input(type='submit', value=button).action(lambda i=i: comp.answer(i))
     return h.root
 
+
 class UserList(object):
+    """ Displays a list of TNQ users
+    """
     pass
 
 @presentation.render_for(UserList)
@@ -66,6 +73,7 @@ def render(self, h, comp, *args):
                     h << h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u))
     return h.root
 
+
 class SelectStaph(object):
     def __init__(self, manboard_name):
         self.scan = component.Component(ScanUserBarcode(["<strong>"+manboard_name+"</strong> is checking out equipment for...","Select staph below or scan MIT ID"]))
@@ -81,6 +89,7 @@ def render(self, h, comp, *args):
         h << self.list
 
     return h.root
+
 
 class SelectEquipment(object):
     def __init__(self, manboard_name="", staph_name=""):
@@ -119,6 +128,7 @@ def render(self, h, comp, *args):
 
     return h.root
 
+
 class RootView(component.Task):
     def go(self, comp):
         while True:
@@ -128,6 +138,7 @@ class RootView(component.Task):
             elif task == "return":
                 comp.call(TaskWrapper("return", component.Component(ReturnTask())))
 
+
 class BorrowTask(component.Task):
     def go(self, comp):
         manboard_user = comp.call(ScanUserBarcode(["Scan manboard member's barcode", "Typically, the barcode on the back of an MIT ID card."]), model="manboard")
@@ -135,22 +146,29 @@ class BorrowTask(component.Task):
             comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
             staph_user = comp.call(SelectStaph(manboard_user.full_name))
-            items = comp.call(SelectEquipment(manboard_user.full_name, staph_user.full_name))
+            equipment_select = SelectEquipment(manboard_user.full_name, staph_user.full_name)
+            checkout_ready = False
+            while not checkout_ready:
+                items = comp.call(equipment_select)
+                checkout_ready = True
+                for item in items:
+                    existing_checkout = Checkout.get_by(equipment=item,date_in=None)
+                    if existing_checkout:
+                        choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
+                                                   (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
+                                                   buttons=["Yes", "No"]))
+                        if choice == 0:
+                            existing_checkout.date_in = datetime.datetime.now()
+                        else:
+                            equipment_select.remove_equipment(item)
+                            checkout_ready = False
             for item in items:
-                existing_checkout = Checkout.get_by(equipment=item,date_in=None)
-                if existing_checkout:
-                    choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
-                                               (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
-                                               buttons=["Yes", "No"]))
-                    if choice == 0:
-                        existing_checkout.date_in = datetime.datetime.now()
-                    else:
-                        continue
                 checkout = Checkout()
                 checkout.user = staph_user
                 checkout.equipment = item
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
+
 
 class ReturnTask(component.Task):
     def go(self, comp):
@@ -180,6 +198,7 @@ def render(self, h, comp, *args):
 class Tnq_checkout(object):
     def __init__(self):
         self.body = component.Component(RootView())
+
 
 @presentation.render_for(Tnq_checkout)
 def render(self, h, *args):

@@ -1,4 +1,5 @@
 from elixir import *
+from elixir import options
 import sqlalchemy
 from sqlalchemy import MetaData
 from sqlextensions import Enum
@@ -9,6 +10,8 @@ def my_create_engine(*args, **kwargs):
         kwargs['pool_recycle'] = int(kwargs['pool_recycle'])
     return old_create_engine(*args, **kwargs)
 sqlalchemy.create_engine = my_create_engine
+
+options.MULTIINHERITANCECOL_NAMEFORMAT = "%(key)s"
 
 __metadata__ = MetaData()
 

@@ -2,6 +2,7 @@ from elixir import *
 from elixir import options
 import sqlalchemy
 from sqlalchemy import MetaData
+from sqlalchemy.sql.expression import func
 from sqlextensions import Enum
 
 old_create_engine = sqlalchemy.create_engine
@@ -69,6 +70,7 @@ class Equipment(Entity):
     pet_name.__doc__ = "(optional) The name given to the equipment by TNQ Staph."
     brand = Field(String(30),required=True)
     model = Field(String(128))
+    full_name = ColumnProperty(lambda c: func.concat_ws(" ", c.brand, c.model, func.concat("(", c.pet_name, ")")))
     description = Field(String(500))
     manual_link = Field(String(256))
     manual_link.__doc__ = "link to the pdf manual of the equipment"

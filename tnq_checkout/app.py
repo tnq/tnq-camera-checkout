@@ -8,15 +8,28 @@ from .barcode import *
 
 from smtplib import SMTP
 
-def sendCheckoutConfirmEmail(to_name,to_email):
-    from_name = 'HRH Grogo'
+def sendCheckoutConfirmEmail(staph_user,manboard_user,equipment):
+    from_name = 'H.R.H. Grogo'
     from_email = 'hrhgrogo@mit.edu'
     subject = '[Technique Checkouts] Confirmation of Checkout'
-    headers = 'From %s <%s>\nTo: %s <%s>\nSubject: %s\n\n' % (from_name,from_email,to_name,to_email,subject)
-    message = "sup,\nThis email totally worked. I'm super psyched.\n\n--HRH Grogo"
+    headers = """From: %s <%s>\n
+                To: %s <%s>\n
+                Cc: %s <%s>\n
+                Subject: %s\n\n""" % (from_name,from_email,
+                                       staph_user.full_name,staph_user.email,
+                                       manboard_user.full_name,manboard_user.email,
+                                       subject)
+    message = """Hello %s,\n\n
+                You've checked out the following equipment from Technique:
+                \n\n---------------\n\n
+                %s
+                \n\n---------------\n\n
+                Laters,\n
+                --H.R.H. Grogo\n\n
+                P.S. %s was the manboard member who checked it out for you.""" % (staph_user.first_name,"\n".join(equipment),manboard_user.full_name)
     connection = SMTP()
     connection.connect("outgoing.mit.edu")
-    connection.sendmail(from_email, to_email, headers+message)
+    connection.sendmail(from_email, ", ".join((staph_user.email,manboard_user.email)), headers+message)
     connection.close()
 
 
@@ -89,7 +102,7 @@ def render(self, h, comp, *args):
 
 class SelectStaph(object):
     def __init__(self, manboard_name):
-        self.scan = component.Component(ScanUserBarcode(["<strong>"+manboard_name+"</strong> is checking out equipment for...","Select staph below or scan MIT ID"]))
+        self.scan = component.Component(ScanUserBarcode(["<strong>%s</strong> is checking out equipment for..."%(manboard_name),"Select staph below or scan MIT ID"]))
         self.list = component.Component(UserList())
 
 @presentation.render_for(SelectStaph)
@@ -106,7 +119,7 @@ def render(self, h, comp, *args):
 
 class SelectEquipment(object):
     def __init__(self, manboard_name="", staph_name=""):
-        self.scan = component.Component(ScanEquipmentBarcode(["<strong>"+manboard_name+"</strong> is checking out equipment for <strong>"+staph_name+"</strong>.","scan equipment"]))
+        self.scan = component.Component(ScanEquipmentBarcode(["<strong>%s</strong> is checking out equipment for <strong>%s</strong>."%(manboard_name,staph_name),"scan equipment"]))
         self.equipment = []
         self.scan.on_answer(self.add_equipment)
 
@@ -128,7 +141,7 @@ def render(self, h, comp, *args):
         with h.div(class_="scrollview-content"):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
-                    h << h.img(src="/static/tnq_checkout/images/icons/"+e.equip_type+".svg", width="91", height="80",class_="icon")
+                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg"%(e.equip_type), width="91", height="80",class_="icon")
                     with h.div:
                         h << e.brand
                         h << " "
@@ -175,6 +188,7 @@ class BorrowTask(component.Task):
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
+            sendCheckoutConfirmEmail(staph_user,manboard_user,items)
             for item in items:
                 checkout = Checkout()
                 checkout.user = staph_user

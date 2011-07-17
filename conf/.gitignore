@@ -1,2 +1,3 @@
-# Don't include the production config file with passwords
+# Don't include the production config files with passwords
 prod.cfg
+testing.cfg

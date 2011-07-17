@@ -6,6 +6,19 @@ from nagare import presentation, component, util, var, log
 from .models import *
 from .barcode import *
 
+from smtplib import SMTP
+
+def sendCheckoutConfirmEmail(to_name,to_email):
+    from_name = 'HRH Grogo'
+    from_email = 'hrhgrogo@mit.edu'
+    subject = '[Technique Checkouts] Confirmation of Checkout'
+    headers = 'From %s <%s>\nTo: %s <%s>\nSubject: %s\n\n' % (from_name,from_email,to_name,to_email,subject)
+    message = "sup,\nThis email totally worked. I'm super psyched.\n\n--HRH Grogo"
+    connection = SMTP()
+    connection.connect("outgoing.mit.edu")
+    connection.sendmail(from_email, to_email, headers+message)
+    connection.close()
+
 
 class TaskSelector(object):
     """ TaskSelector provides the choice to either "borrow" or "return" equipment

@@ -125,18 +125,7 @@ class SelectEquipment(object):
     def __init__(self, manboard=None, staph=None):
         self.manboard = manboard
         self.staph = staph
-        if manboard:
-            if manboard == staph:
-                prompt = "<strong>%s</strong> is checking out equipment."%(manboard.full_name)
-            else:
-                prompt = "<strong>%s</strong> is checking out equipment for <strong>%s</strong>."%(manboard.full_name,staph.full_name)
-            self.scan = component.Component(ScanEquipmentBarcode([prompt,"scan equipment"]))
-            self.final_action = "Finish Checkout"
-            self.selected_task = "borrow"
-        else:
-            self.scan = component.Component(ScanEquipmentBarcode([" ","scan equipment to return"]))
-            self.final_action = "Return Equipment"
-            self.selected_task = "return"
+        self.scan = component.Component(ScanEquipmentBarcode())
         self.equipment = []
         self.scan.on_answer(self.add_equipment)
 
@@ -147,28 +136,37 @@ class SelectEquipment(object):
     def remove_equipment(self, equipment):
         self.equipment.remove(equipment)
 
-    def confirm(self, equipment_list):
-        self.final_action = "Okay"
-        self.selected_task = "confirm"
-        self.equipment = equipment_list
-
-@presentation.render_for(SelectEquipment)
-def render(self, h, comp, *args):
-    if self.selected_task == "confirm":
+@presentation.render_for(SelectEquipment, model="borrow")
+@presentation.render_for(SelectEquipment, model="confirm")
+@presentation.render_for(SelectEquipment, model="return")
+def render(self, h, comp, model, *args):
+    if model == "confirm":
         with h.div(class_="message message-1 confirm"):
             h << "%s has checked out:" % (self.staph.first_name)
     else:
+        if model == "return":
+            prompt = [" ", "scan equipment to return"]
+        else:
+            prompt = ["<strong>%s</strong> is checking out equipment." % (self.manboard.full_name),
+                      "scan equipment"]
+            if self.manboard != self.staph:
+                prompt[0] = prompt[0][:-1] + " for <strong>%s</strong>." % (self.staph.full_name)
+        self.scan().messages = prompt
         h << self.scan
     
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
-    with h.div(class_="scrollview-container equipment %s"%(self.selected_task),scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
+    with h.div(class_="scrollview-container equipment%s" % (' '+model if model else ''),
+               scrollviewbars="none",
+               scrollviewmode="table",
+               scrollviewenabledscrollx="no"):
         with h.div(class_="scrollview-content"):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
                     
-                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg"%(e.equip_type),class_="icon")
+                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg" % (e.equip_type),
+                               class_="icon")
                     with h.div(class_="name"):
                         h << e.brand
                         if e.model:
@@ -176,14 +174,20 @@ def render(self, h, comp, *args):
                             h << e.model
                         if e.pet_name:
                             h << h.strong("(%s)" % (e.pet_name))
-                    if self.selected_task == "confirm":
+                    if model == "confirm":
                         with h.div(class_="due"):
                             h << h.strong("Due: ")
                             h << "6 days"
                     else:
                         h << h.a("X",class_="ex").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
-        h << h.a(self.final_action ).action(lambda: comp.answer(self.equipment))
+        if model == "confirm":
+            a = h.a("Okay")
+        elif model == "return":
+            a = h.a("Return Equipment")
+        else:
+            a = h.a("Finish Checkout")
+        h << a.action(lambda: comp.answer(self.equipment))
 
     return h.root
 
@@ -207,7 +211,7 @@ class BorrowTask(component.Task):
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
             while not checkout_ready:
-                items = comp.call(equipment_select)
+                items = comp.call(equipment_select, model="borrow")
                 checkout_ready = True
                 for item in items:
                     existing_checkout = Checkout.get_by(equipment=item,date_in=None)
@@ -229,13 +233,12 @@ class BorrowTask(component.Task):
                 checkout.equipment = item
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
-            equipment_select.confirm(items)
-            comp.call(equipment_select)
+            comp.call(equipment_select, model="confirm")
 
 
 class ReturnTask(component.Task):
     def go(self, comp):
-        returned_items = comp.call(SelectEquipment())
+        returned_items = comp.call(SelectEquipment(), model="return")
         for returned_item in returned_items:
             checkout = Checkout.get_by(equipment=returned_item,date_in=None)
             if checkout:

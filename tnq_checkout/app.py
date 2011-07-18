@@ -12,21 +12,24 @@ def sendCheckoutConfirmEmail(staph_user,manboard_user,equipment):
     from_name = 'H.R.H. Grogo'
     from_email = 'hrhgrogo@mit.edu'
     subject = '[Technique Checkouts] Confirmation of Checkout'
-    headers = """From: %s <%s>\n
-                To: %s <%s>\n
-                Cc: %s <%s>\n
-                Subject: %s\n\n""" % (from_name,from_email,
+    headers = """From: %s <%s>\nTo: %s <%s>\nCc: %s <%s>\nSubject: %s\n\n""" % (from_name,from_email,
                                        staph_user.full_name,staph_user.email,
                                        manboard_user.full_name,manboard_user.email,
                                        subject)
-    message = """Hello %s,\n\n
-                You've checked out the following equipment from Technique:
-                \n\n---------------\n\n
-                %s
-                \n\n---------------\n\n
-                Laters,\n
-                --H.R.H. Grogo\n\n
-                P.S. %s was the manboard member who checked it out for you.""" % (staph_user.first_name,"\n".join(equipment),manboard_user.full_name)
+    message = """Hello %s,
+
+You've checked out the following equipment from Technique:
+
+============================================================
+
+%s
+
+============================================================
+
+Laters,
+--H.R.H. Grogo
+
+P.S. %s was the manboard member who checked it out for you.""" % (staph_user.first_name,"\n".join(e.pet_name for e in equipment),manboard_user.full_name)
     connection = SMTP()
     connection.connect("outgoing.mit.edu")
     connection.sendmail(from_email, ", ".join((staph_user.email,manboard_user.email)), headers+message)
@@ -99,7 +102,6 @@ def render(self, h, comp, *args):
                     h << h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u))
     return h.root
 
-
 class SelectStaph(object):
     def __init__(self, manboard_name):
         self.scan = component.Component(ScanUserBarcode(["<strong>%s</strong> is checking out equipment for..."%(manboard_name),"Select staph below or scan MIT ID"]))
@@ -116,10 +118,22 @@ def render(self, h, comp, *args):
 
     return h.root
 
-
 class SelectEquipment(object):
-    def __init__(self, manboard_name="", staph_name=""):
-        self.scan = component.Component(ScanEquipmentBarcode(["<strong>%s</strong> is checking out equipment for <strong>%s</strong>."%(manboard_name,staph_name),"scan equipment"]))
+    def __init__(self, manboard=None, staph=None):
+        self.manboard = manboard
+        self.staph = staph
+        if manboard:
+            if manboard == staph:
+                prompt = "<strong>%s</strong> is checking out equipment."%(manboard.full_name)
+            else:
+                prompt = "<strong>%s</strong> is checking out equipment for <strong>%s</strong>."%(manboard.full_name,staph.full_name)
+            self.scan = component.Component(ScanEquipmentBarcode([prompt,"scan equipment"]))
+            self.final_action = "Finish Checkout"
+            self.selected_task = "borrow"
+        else:
+            self.scan = component.Component(ScanEquipmentBarcode([" ","scan equipment to return"]))
+            self.final_action = "Return Equipment"
+            self.selected_task = "return"
         self.equipment = []
         self.scan.on_answer(self.add_equipment)
 
@@ -130,30 +144,44 @@ class SelectEquipment(object):
     def remove_equipment(self, equipment):
         self.equipment.remove(equipment)
 
+    def confirm(self, equipment_list):
+        self.final_action = "Okay"
+        self.selected_task = "confirm"
+        self.equipment = equipment_list
+
 @presentation.render_for(SelectEquipment)
 def render(self, h, comp, *args):
-    h << self.scan
+    if self.selected_task == "confirm":
+        with h.div(class_="message message-1 confirm"):
+            h << "%s has checked out:" % (self.staph.first_name)
+    else:
+        h << self.scan
     
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
-    with h.div(class_="scrollview-container equipment",scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
+    with h.div(class_="scrollview-container equipment %s"%(self.selected_task),scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
         with h.div(class_="scrollview-content"):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
-                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg"%(e.equip_type), width="91", height="80",class_="icon")
-                    with h.div:
+                    
+                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg"%(e.equip_type),class_="icon")
+                    with h.div(class_="name"):
                         h << e.brand
                         h << " "
                         h << e.model
-                        h << " "
-                        h << h.strong(e.pet_name)
-                    h << h.a("X").action(lambda e=e: self.remove_equipment(e))
+                        if e.pet_name:
+                            h << h.strong("(%s)"%(e.pet_name))
+                    if self.selected_task == "confirm":
+                        with h.div(class_="due"):
+                            h << h.strong("Due: ")
+                            h << "6 days"
+                    else:
+                        h << h.a("X",class_="ex").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
-        h << h.a("Finish checkout").action(lambda: comp.answer(self.equipment))
+        h << h.a(self.final_action ).action(lambda: comp.answer(self.equipment))
 
     return h.root
-
 
 class RootView(component.Task):
     def go(self, comp):
@@ -172,7 +200,7 @@ class BorrowTask(component.Task):
             comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
             staph_user = comp.call(SelectStaph(manboard_user.full_name))
-            equipment_select = SelectEquipment(manboard_user.full_name, staph_user.full_name)
+            equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
             while not checkout_ready:
                 items = comp.call(equipment_select)
@@ -180,7 +208,9 @@ class BorrowTask(component.Task):
                 for item in items:
                     existing_checkout = Checkout.get_by(equipment=item,date_in=None)
                     if existing_checkout:
-                        choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
+                        choice = 0;
+                        if staph_user != existing_checkout.user:
+                            choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
                                                    (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
@@ -195,6 +225,8 @@ class BorrowTask(component.Task):
                 checkout.equipment = item
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
+            equipment_select.confirm(items)
+            comp.call(equipment_select)
 
 
 class ReturnTask(component.Task):

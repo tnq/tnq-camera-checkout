@@ -24,6 +24,11 @@ body{
 	background: -webkit-gradient( linear, center bottom, center top, color-stop( 0, rgba(225,225,225,1) ), color-stop( .5, rgba(252,252,252,1) ) ) no-repeat rgba(252,252,252,1);
 }
 
+a:active{
+	color: #cccccc;
+	background: #666666;
+}
+
 #header{
 	height: 44px;
 }
@@ -68,6 +73,10 @@ body{
 	background-color: #0099FF;
 }
 
+#header.return .task{
+	background-color: #FF9900;
+}
+
 #content{
 	width: 800px;
 	height: 480px;
@@ -110,6 +119,11 @@ body{
 	text-decoration: none;
 	padding-top: 185px;
 	padding-bottom: 186px;
+}
+
+.task-selector div a:active{
+	-moz-border-radius: 10px;
+	border-radius: 10px;
 }
 
 .task-selector div a:visited{
@@ -169,16 +183,22 @@ form.barcode .message-0{
 }
 
 form.barcode .message-0 strong{
-	font-weight: 900;
+	font-weight: 600;
+	color: #0070BA;
 }
 
-form.barcode .message-1{
+form.barcode .message-1,
+.message-1.confirm{
 	font-size: 3em;
 	font-weight: 300;
 	text-transform: lowercase;
 	margin-top: 5px;
 	text-align: right;
 	margin-right:20px;
+}
+
+.message-1.confirm{
+	margin-top:.5em;
 }
 
 .finish-checkout{
@@ -207,8 +227,15 @@ form.barcode .message-1{
 	border-top:5px solid #666666;
 }
 
-.scrollview-container.equipment{
+.scrollview-container.equipment.borrow{
 	height: 285px;
+}
+
+.scrollview-container.equipment.return{
+	height:305px;
+}
+.scrollview-container.equipment.confirm{
+	height:297px;
 }
 
 .scrollview-item{
@@ -232,17 +259,39 @@ form.barcode .message-1{
 	padding: .5em 1em;
 }
 
-.equipment .scrollview-item div{
+.scrollview-item a:active{
+	color: #ffffff;
+}
+
+.equipment .scrollview-item div.name{
 	display: inline-table;
 	padding: 1.1em 0.5em;
+	padding-top: 1.2em;
 	border-right: 1px solid #cccccc;
-	font-size: .8em;
 	vertical-align: middle;
 	width: 571px;
+	font-size: .8em;
+}
+
+.equipment .scrollview-item div.name strong{
+	margin-left: .5em;
+}
+
+.equipment.confirm .scrollview-item div.name{
+	width:470px;
+	padding: .5em 0.5em;
+}
+
+.equipment.confirm .scrollview-item div.due{
+	display: inline-table;
+	font-size: .8em;
+	padding-top:2px;
+	vertical-align: middle;
+	text-align: center;
+	width:240px;
 }
 
 .equipment .scrollview-item a{
-	display:inline-table;
 	padding: .75em 0;
 	width: 88px;
 	text-align:center;
@@ -250,16 +299,24 @@ form.barcode .message-1{
 	vertical-align: middle;
 }
 
+.equipment .scrollview-item a.ex{
+	display:inline-table;
+	font-size: 2em;
+	padding: 0;
+	font-weight: 400;
+}
+
 .equipment .scrollview-item img.icon{
 	margin-left:16px;
 	display:inline-table;
 	vertical-align: middle;
+	width: 91px;
+	height: 80px;
 }
 
-a:active{
-	color: #cccccc;
-	
-	background: #666666;
+.equipment.confirm .scrollview-item img.icon{
+	width:40px;
+	height:35px;
 }
 
 input[type="text"]{

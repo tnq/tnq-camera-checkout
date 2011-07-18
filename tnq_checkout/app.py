@@ -29,7 +29,10 @@ You've checked out the following equipment from Technique:
 Laters,
 --H.R.H. Grogo
 
-P.S. %s was the manboard member who checked it out for you.""" % (staph_user.first_name,"\n".join(e.pet_name for e in equipment),manboard_user.full_name)
+P.S. %s was the manboard member who checked it out for you.""" % (
+        staph_user.first_name,
+        "\n".join(e.full_name for e in equipment),
+        manboard_user.full_name)
     connection = SMTP()
     connection.connect("outgoing.mit.edu")
     connection.sendmail(from_email, ", ".join((staph_user.email,manboard_user.email)), headers+message)
@@ -168,10 +171,11 @@ def render(self, h, comp, *args):
                     h << h.img(src="/static/tnq_checkout/images/icons/%s.svg"%(e.equip_type),class_="icon")
                     with h.div(class_="name"):
                         h << e.brand
-                        h << " "
-                        h << e.model
+                        if e.model:
+                            h << " "
+                            h << e.model
                         if e.pet_name:
-                            h << h.strong("(%s)"%(e.pet_name))
+                            h << h.strong("(%s)" % (e.pet_name))
                     if self.selected_task == "confirm":
                         with h.div(class_="due"):
                             h << h.strong("Due: ")
@@ -211,7 +215,7 @@ class BorrowTask(component.Task):
                         choice = 0;
                         if staph_user != existing_checkout.user:
                             choice = comp.call(Confirm("%s is currently checked out to %s. Do you want to check it in for them?" %
-                                                   (item.brand+" "+item.model+(" ("+item.pet_name+")" if item.pet_name else ""),existing_checkout.user.full_name),
+                                                   (item.full_name,existing_checkout.user.full_name),
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
                             existing_checkout.date_in = datetime.datetime.now()

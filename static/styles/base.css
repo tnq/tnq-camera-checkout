@@ -138,28 +138,31 @@ a:active{
 	margin-left: 452px;
 }
 
-form.confirm .message,
 form.manboard .message-0{
 	font-size: 3.55em;
 	font-weight:300;
 }
 
 form.confirm .message{
-	margin: 0 50px;
-	margin-top: 30px;
-	margin-bottom: 20px;
+	font-size: 2.5em;
+	padding: 30px;
+	font-weight: 400;
 }
 
 form.confirm input[type="submit"]{
-	background-color: #33CC00;
+	background-color: #2c2c2c;
 	-moz-border-radius: 10px;
 	border-radius: 10px;
 	padding: .2em .5em;
 	border: none;
 	color: #ffffff;
-	font-size: 3.5em;
+	font-size: 3em;
 	font-weight:900;
-	margin-left:50px;
+	margin-left:30px;
+}
+
+form.confirm input.button-0{
+	background-color: #33CC00;
 }
 
 form.manboard .message-0{
@@ -228,7 +231,7 @@ form.barcode .message-1,
 }
 
 .scrollview-container.equipment.borrow{
-	height: 285px;
+	height: 282px;
 }
 
 .scrollview-container.equipment.return{
@@ -265,11 +268,11 @@ form.barcode .message-1,
 
 .equipment .scrollview-item div.name{
 	display: inline-table;
-	padding: 1.1em 0.5em;
-	padding-top: 1.2em;
+	padding: .8em 0.5em;
+	padding-top: 1em;
 	border-right: 1px solid #cccccc;
 	vertical-align: middle;
-	width: 571px;
+	width: 581px;
 	font-size: .8em;
 }
 
@@ -310,8 +313,8 @@ form.barcode .message-1,
 	margin-left:16px;
 	display:inline-table;
 	vertical-align: middle;
-	width: 91px;
-	height: 80px;
+	width: 81px;
+	height: 71px;
 }
 
 .equipment.confirm .scrollview-item img.icon{

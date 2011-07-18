@@ -82,7 +82,7 @@ def render(self, h, comp, *args):
     with h.form(class_="confirm"):
         h << h.div(self.msg, class_="message")
         for i, button in enumerate(self.buttons):
-            h << h.input(type='submit', value=button).action(lambda i=i: comp.answer(i))
+            h << h.input(type='submit', value=button, class_="button-%s"%(i)).action(lambda i=i: comp.answer(i))
     return h.root
 
 

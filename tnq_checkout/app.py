@@ -125,6 +125,10 @@ def render(self, h, comp, model, *args):
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
+    # FIX ME
+    if model == "confirm":
+        h.head.css_url('/static/tnq_checkout/styles/hide-cancel.css')
+    
     with h.div(class_="scrollview-container equipment%s" % (' '+model if model else ''),
                scrollviewbars="none",
                scrollviewmode="table",

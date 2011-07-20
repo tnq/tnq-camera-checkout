@@ -183,6 +183,7 @@ class BorrowTask(component.Task):
             staph_user = comp.call(SelectStaph(manboard_user.full_name))
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
+            tnq_email = TNQEmail()
             while not checkout_ready:
                 items = comp.call(equipment_select, model="borrow")
                 checkout_ready = True
@@ -199,7 +200,7 @@ class BorrowTask(component.Task):
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
-            sendCheckoutConfirmEmail(staph_user,manboard_user,items)
+            
             for item in items:
                 checkout = Checkout()
                 checkout.user = staph_user
@@ -207,6 +208,7 @@ class BorrowTask(component.Task):
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
                 checkout.date_due = checkout.date_out + datetime.timedelta(hours=item.checkout_hours)
+            tnq_email.sendCheckoutEmail(staph_user,manboard_user,items)
             comp.call(equipment_select, model="confirm")
 
 

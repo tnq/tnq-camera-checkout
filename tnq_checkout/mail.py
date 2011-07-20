@@ -6,33 +6,55 @@ from nagare import presentation, component, util, var
 from .models import *
 
 from smtplib import SMTP
+from email.mime.text import MIMEText
 
-def sendCheckoutConfirmEmail(staph_user,manboard_user,equipment):
-    from_name = 'H.R.H. Grogo'
-    from_email = 'hrhgrogo@mit.edu'
-    subject = '[Technique Checkouts] Confirmation of Checkout'
-    headers = """From: %s <%s>\nTo: %s <%s>\nCc: %s <%s>\nSubject: %s\n\n""" % (from_name,from_email,
-                                       staph_user.full_name,staph_user.email,
-                                       manboard_user.full_name,manboard_user.email,
-                                       subject)
-    message = """Hello %s,
+class TNQEmail(object):
+    def __init__(self):
+        self.from_name = "H.R.H. Grogo"
+        self.from_email = "tnq-checkouts@mit.edu"
+        self.host = "outgoing.mit.edu"
 
+    def sendCheckoutEmail(self,staph_user,manboard_user,equipment_list):
+        checkouts = staph_user.checkouts
+        current_checkouts = [c for c in checkouts if c.equipment in equipment_list]
+        old_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due > datetime.datetime.now()]
+        expired_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due <= datetime.datetime.now()]
+        message = "Hello %s," % (staph_user.first_name)
+        message = message + """
 You've checked out the following equipment from Technique:
-
-============================================================
-
 %s
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in current_checkouts))
+        if old_checkouts:
+            message = message + """
+You also have the following equipment checked out---please remember to get these in on time:
+%s
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in old_checkouts))
+        if expired_checkouts:
+            message = message + """
+You also have the following equipment checked out---please remember to get these in on time:
+%s
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in expired_checkouts))
+        message = message + """
+If you have any questions, please reply to this email.
 
-============================================================
+All the best, and keep taking photos!
+--%s
 
-Laters,
---H.R.H. Grogo
+P.S. %s was the manboard member who checked your equipment out.""" % (self.from_name, manboard_user.full_name)
+        msg = MIMEText(message)
+        msg['Subject'] = '[Technique Checkouts] Confirmation of Checkout'
+        msg['From'] = "%s <%s>" % (self.from_name,self.from_email)
+        msg['To'] = "%s <%s>" % (staph_user.full_name,staph_user.email)
+        msg['CC'] = "%s <%s>" % (manboard_user.full_name,manboard_user.email)
+        self.sendMessage(self.from_email, ", ".join((staph_user.email,manboard_user.email)), msg.as_string())
 
-P.S. %s was the manboard member who checked it out for you.""" % (
-        staph_user.first_name,
-        "\n".join(e.full_name + ' | Due in %s day%s' % (e.checkout_hours/24,'' if e.checkout_hours == 24 else 's') for e in equipment),
-        manboard_user.full_name)
-    connection = SMTP()
-    connection.connect("outgoing.mit.edu")
-    connection.sendmail(from_email, ", ".join((staph_user.email,manboard_user.email)), headers+message)
-    connection.close()
+    def sendCheckinEmail(self,equipment_list,staph_user=None,manboard_user=None):
+        message = """The following equipment was just checked in%s:
+
+%s """ % ("","")
+
+    def sendMessage(self,from_addresses,to_addresses,message_string):
+        connection = SMTP()
+        connection.connect(self.host)
+        connection.sendmail(from_addresses, to_addresses, message_string)
+        connection.close()

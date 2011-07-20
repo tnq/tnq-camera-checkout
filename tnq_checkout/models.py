@@ -70,6 +70,7 @@ class Equipment(Entity):
     pet_name.__doc__ = "(optional) The name given to the equipment by TNQ Staph."
     brand = Field(String(30),required=True)
     model = Field(String(128))
+    checkout_hours = Field(Integer)
     full_name = ColumnProperty(lambda c: func.concat_ws(" ", c.brand, c.model, func.concat("(", c.pet_name, ")")))
     description = Field(String(500))
     manual_link = Field(String(256))
@@ -85,5 +86,6 @@ class Checkout(Entity):
     manboard_member = ManyToOne('User')
     manboard_member.__doc__ = "the manboard member who checked out the equipment for the staph"
     date_out = Field(DATETIME)
+    date_due = Field(DATETIME)
     date_in = Field(DATETIME)
 

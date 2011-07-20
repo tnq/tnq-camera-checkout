@@ -30,7 +30,7 @@ Laters,
 
 P.S. %s was the manboard member who checked it out for you.""" % (
         staph_user.first_name,
-        "\n".join(e.full_name for e in equipment),
+        "\n".join(e.full_name + ' | Due in %s day%s' % (e.checkout_hours/24,'' if e.checkout_hours == 24 else 's') for e in equipment),
         manboard_user.full_name)
     connection = SMTP()
     connection.connect("outgoing.mit.edu")

@@ -149,7 +149,8 @@ def render(self, h, comp, model, *args):
                     if model == "confirm":
                         with h.div(class_="due"):
                             h << h.strong("Due: ")
-                            h << "6 days"
+                            h << e.checkout_hours/24
+                            h << " day%s" % ('' if e.checkout_hours == 24 else 's')
                     else:
                         h << h.a("X",class_="ex").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
@@ -205,6 +206,7 @@ class BorrowTask(component.Task):
                 checkout.equipment = item
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
+                checkout.date_due = checkout.date_out + datetime.timedelta(hours=item.checkout_hours)
             comp.call(equipment_select, model="confirm")
 
 

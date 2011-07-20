@@ -8,6 +8,9 @@ from .models import *
 from smtplib import SMTP
 from email.mime.text import MIMEText
 
+def prettify_date(date):
+    return date.strftime("%A, %B %d at %I:%M %p")
+
 class TNQEmail(object):
     def __init__(self):
         self.from_name = "H.R.H. Grogo"
@@ -15,7 +18,7 @@ class TNQEmail(object):
         self.host = "outgoing.mit.edu"
 
     def sendCheckoutEmail(self,staph_user,manboard_user,equipment_list):
-        checkouts = staph_user.checkouts
+        checkouts = [c for c in staph_user.checkouts if not c.date_in]
         current_checkouts = [c for c in checkouts if c.equipment in equipment_list]
         old_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due > datetime.datetime.now()]
         expired_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due <= datetime.datetime.now()]
@@ -23,17 +26,17 @@ class TNQEmail(object):
         message = message + """
 You've checked out the following equipment from Technique:
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in current_checkouts))
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in current_checkouts))
         if old_checkouts:
             message = message + """
 You also have the following equipment checked out---please remember to get these in on time:
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in old_checkouts))
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in old_checkouts))
         if expired_checkouts:
             message = message + """
 You also have the following equipment checked out---please remember to get these in on time:
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (c.date_due) for c in expired_checkouts))
+""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in expired_checkouts))
         message = message + """
 If you have any questions, please reply to this email.
 

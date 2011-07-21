@@ -42,6 +42,16 @@ class AuthUser(Entity):
     last_login = Field(DATETIME,required=True)
     date_joined = Field(DATETIME,required=True)
 
+class Checkout(Entity):
+    using_options(tablename="checkout_checkout")
+    user = ManyToOne('User')
+    equipment = ManyToOne('Equipment')
+    manboard_member = ManyToOne('User')
+    manboard_member.__doc__ = "the manboard member who checked out the equipment for the staph"
+    date_out = Field(DATETIME)
+    date_due = Field(DATETIME)
+    date_in = Field(DATETIME)
+
 class User(AuthUser):
     """User: The person who will be checking out equipment.
 
@@ -56,6 +66,7 @@ class User(AuthUser):
     phone = Field(String(20))
 
     checkouts = OneToMany('Checkout', inverse='user')
+    checkouts_active = OneToMany('Checkout', inverse='user',filter=Checkout.date_in==None)
 
 class Equipment(Entity):
     """Equipment: What the User will be checking out.
@@ -78,14 +89,3 @@ class Equipment(Entity):
     checkouts = OneToMany('Checkout')
     serial = Field(String(128))
     notes = Field(String(500))
-
-class Checkout(Entity):
-    using_options(tablename="checkout_checkout")
-    user = ManyToOne('User')
-    equipment = ManyToOne('Equipment')
-    manboard_member = ManyToOne('User')
-    manboard_member.__doc__ = "the manboard member who checked out the equipment for the staph"
-    date_out = Field(DATETIME)
-    date_due = Field(DATETIME)
-    date_in = Field(DATETIME)
-

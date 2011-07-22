@@ -17,6 +17,16 @@ class TNQEmail(object):
         self.from_email = "tnq-checkouts@mit.edu"
         self.host = "outgoing.mit.edu"
 
+    def sendDigestEmail(self):
+        equipment = Equipment.query.order_by("barcode_id")
+        message = str(equipment)
+        msg = MIMEText(message)
+        msg['Subject'] = '[Technique Checkouts] Confirmation of Checkout'
+        msg['From'] = "technique@mit.edu"
+        msg['To'] = "nwiltsie@mit.edu"
+        self.sendMessage(self.from_email, ", ".join((staph_user.email,manboard_user.email)), msg.as_string())
+
+
     def sendCheckoutEmail(self,staph_user,manboard_user,equipment_list):
         checkouts = staph_user.checkouts_active
         current_checkouts = [c for c in checkouts if c.equipment in equipment_list]

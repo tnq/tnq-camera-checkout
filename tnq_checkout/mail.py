@@ -7,6 +7,7 @@ from .models import *
 
 from smtplib import SMTP
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def prettify_date(date):
     return date.strftime("%A, %B %d at %I:%M %p")
@@ -18,13 +19,31 @@ class TNQEmail(object):
         self.host = "outgoing.mit.edu"
 
     def sendDigestEmail(self):
-        equipment = Equipment.query.order_by("barcode_id")
-        message = str(equipment)
-        msg = MIMEText(message)
-        msg['Subject'] = '[Technique Checkouts] Confirmation of Checkout'
+        equipment = Equipment.query.join(Equipment.current_checkout).filter(Equipment.current_checkout != None).order_by(Checkout.date_due).all()
+        msg = MIMEMultipart('alternative')
+        intro = "Hello TNQ PhotoEds,\n\nThe following equipment is currently checked out:\n\n"
+        html = intro + "<table><tr><th>Equipment Name</th><th>Equipment Model</th><th>Checker-Outer</th><th>Date Due</th></tr>\n"
+        text = intro 
+
+        for e in equipment:
+            if e.pet_name:
+                name = e.pet_name
+            else:
+                name = e.barcode_id
+            html += "<tr><td>%s</td><td>%s %s</td><td>%s</td><td>%s</td></tr>\n" %(name, e.brand, e.model, e.current_checkout.user.full_name, prettify_date(e.current_checkout.date_due))
+            text += "%s\t\t(%s %s)\t\t%s\t\t%s\n" %(name, e.brand, e.model, e.current_checkout.user.full_name, prettify_date(e.current_checkout.date_due))
+
+        html += "</table>This message powered by your friendly neighborhood Nagare script."
+        text += "This message powered by your friendly neighborhood Nagare script."
+
+        msg['Subject'] = '[Technique Checkouts] Checkout Digest'
         msg['From'] = "technique@mit.edu"
         msg['To'] = "nwiltsie@mit.edu"
-        self.sendMessage(self.from_email, ", ".join((staph_user.email,manboard_user.email)), msg.as_string())
+        part1 = MIMEText(text,'plain')
+        part2 = MIMEText(html,'html')
+        msg.attach(part1)
+        msg.attach(part2)
+        self.sendMessage(self.from_email, "nwiltsie@mit.edu", msg.as_string())
 
 
     def sendCheckoutEmail(self,staph_user,manboard_user,equipment_list):

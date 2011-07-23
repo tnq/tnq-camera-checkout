@@ -18,7 +18,7 @@ class TNQEmail(object):
         self.host = "outgoing.mit.edu"
 
     def sendCheckoutEmail(self,staph_user,manboard_user,equipment_list):
-        checkouts = [c for c in staph_user.checkouts if not c.date_in]
+        checkouts = staph_user.checkouts_active
         current_checkouts = [c for c in checkouts if c.equipment in equipment_list]
         old_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due > datetime.datetime.now()]
         expired_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due <= datetime.datetime.now()]

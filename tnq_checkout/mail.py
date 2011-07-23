@@ -39,12 +39,12 @@ def sendDigestEmail():
 
     msg['Subject'] = '[Technique Checkouts] Checkout Digest'
     msg['From'] = "technique@mit.edu"
-    msg['To'] = "nwiltsie@mit.edu"
+    msg['To'] = "tnq-checkouts@mit.edu"
     part1 = MIMEText(text,'plain')
     part2 = MIMEText(html,'html')
     msg.attach(part1)
     msg.attach(part2)
-    sendMessage(from_email, ["nwiltsie@mit.edu"], msg.as_string())
+    sendMessage(from_email, ["tnq-checkouts@mit.edu"], msg.as_string())
 
 def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     checkouts = staph_user.checkouts_active

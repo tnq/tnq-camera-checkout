@@ -197,6 +197,7 @@ class BorrowTask(component.Task):
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
                             existing_checkout.date_in = datetime.datetime.now()
+                            tnq_email.sendCheckinEmail((item,), staph_user, manboard_user)
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
@@ -215,10 +216,14 @@ class BorrowTask(component.Task):
 class ReturnTask(component.Task):
     def go(self, comp):
         returned_items = comp.call(SelectEquipment(), model="return")
+        tnq_email = TNQEmail()
+        actually_returned_items = []
         for returned_item in returned_items:
             checkout = Checkout.get_by(equipment=returned_item,date_in=None)
             if checkout:
+                actually_returned_items = actually_returned_items + [returned_item]
                 checkout.date_in = datetime.datetime.now()
+        tnq_email.sendCheckinEmail(actually_returned_items)
 
 class TaskWrapper(object):
     def __init__(self, label, body):

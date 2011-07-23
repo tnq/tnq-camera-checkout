@@ -51,21 +51,21 @@ class TNQEmail(object):
         current_checkouts = [c for c in checkouts if c.equipment in equipment_list]
         old_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due > datetime.datetime.now()]
         expired_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due <= datetime.datetime.now()]
-        message = "Hello %s," % (staph_user.first_name)
+        message = "Hello %s,\n" % (staph_user.first_name)
         message = message + """
 You've checked out the following equipment from Technique:
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in current_checkouts))
+""" % ("\n".join("-- " + c.equipment.full_name + "    |    *Return by %s*" % (prettify_date(c.date_due)) for c in current_checkouts))
         if old_checkouts:
             message = message + """
 You also have the following equipment checked out---please remember to get these in on time:
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in old_checkouts))
+""" % ("\n".join("-- " + c.equipment.full_name + "    |    Return by %s" % (prettify_date(c.date_due)) for c in old_checkouts))
         if expired_checkouts:
             message = message + """
-You also have the following equipment checked out---please remember to get these in on time:
+**The following equipment is expired--this is not good:**
 %s
-""" % ("\n".join("-" + c.equipment.full_name + " | Return by %s" % (prettify_date(c.date_due)) for c in expired_checkouts))
+""" % ("\n".join("-- " + c.equipment.full_name + "    |    *Was supposed to be returned by %s*" % (prettify_date(c.date_due)) for c in expired_checkouts))
         message = message + """
 If you have any questions, please reply to this email.
 
@@ -75,18 +75,33 @@ All the best, and keep taking photos!
 P.S. %s was the manboard member who checked your equipment out.""" % (self.from_name, manboard_user.full_name)
         msg = MIMEText(message)
         msg['Subject'] = '[Technique Checkouts] Confirmation of Checkout'
-        msg['From'] = "%s <%s>" % (self.from_name,self.from_email)
-        msg['To'] = "%s <%s>" % (staph_user.full_name,staph_user.email)
-        msg['CC'] = "%s <%s>" % (manboard_user.full_name,manboard_user.email)
-        self.sendMessage(self.from_email, ", ".join((staph_user.email,manboard_user.email)), msg.as_string())
+        msg['From'] = "%s <%s>" % (self.from_name, self.from_email)
+        msg['To'] = "%s <%s>" % (staph_user.full_name, staph_user.email)
+        msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email)
+        self.sendMessage(self.from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
     def sendCheckinEmail(self,equipment_list,staph_user=None,manboard_user=None):
         message = """The following equipment was just checked in%s:
 
-%s """ % ("","")
+%s 
+%s""" % (" by "+staph_user.full_name if staph_user else "",
+         "\n".join("-" + e.full_name for e in equipment_list),
+         "\nThe supervising manboard member was " + manboard_user.full_name if manboard_user and staph_user != manboard_user else "")
+        message = message + """
 
-    def sendMessage(self,from_addresses,to_addresses,message_string):
+--%s""" % (self.from_name)
+        msg = MIMEText(message)
+        msg['Subject'] = '[Technique Checkouts] Successful Equipment Check In'
+        msg['From'] = "%s <%s>" % (self.from_name, self.from_email)
+        if staph_user:
+            msg['To'] = "%s <%s>" % (staph_user.full_name, staph_user.email)
+            msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email)
+        else:
+            msg['To'] = "%s <%s>" % (self.from_name, self.from_email)
+        self.sendMessage(self.from_email, [staph_user.email, manboard_user.email] if staph_user else [], msg.as_string())
+
+    def sendMessage(self, from_addresses, to_addresses, message_string):
         connection = SMTP()
         connection.connect(self.host)
-        connection.sendmail(from_addresses, to_addresses, message_string)
+        connection.sendmail(from_addresses, [self.from_email] + to_addresses, message_string)
         connection.close()

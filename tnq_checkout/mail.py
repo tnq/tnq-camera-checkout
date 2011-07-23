@@ -85,10 +85,9 @@ P.S. %s was the manboard member who checked your equipment out.""" % (self.from_
 
 %s 
 %s""" % (" by "+staph_user.full_name if staph_user else "",
-         "\n".join("-" + e.full_name for e in equipment_list),
-         "\nThe supervising manboard member was " + manboard_user.full_name if manboard_user and staph_user != manboard_user else "")
+         "\n".join("-- " + e.full_name for e in equipment_list),
+         "\nThe supervising manboard member was " + manboard_user.full_name + "\n" if manboard_user and staph_user != manboard_user else "")
         message = message + """
-
 --%s""" % (self.from_name)
         msg = MIMEText(message)
         msg['Subject'] = '[Technique Checkouts] Successful Equipment Check In'

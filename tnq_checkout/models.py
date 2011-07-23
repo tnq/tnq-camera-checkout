@@ -87,5 +87,6 @@ class Equipment(Entity):
     manual_link = Field(String(256))
     manual_link.__doc__ = "link to the pdf manual of the equipment"
     checkouts = OneToMany('Checkout')
+    current_checkout = OneToOne('Checkout', inverse='equipment', filter=lambda c: c.date_in==None)
     serial = Field(String(128))
     notes = Field(String(500))

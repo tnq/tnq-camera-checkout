@@ -74,7 +74,7 @@ class Equipment(Entity):
     Equipment can be anything we slap a barcode on...cameras, tripods, batteries, memory, lighting, umbrellas, whatever...
     """
     using_options(tablename="checkout_equipment")
-    barcode_id = Field(String(7),required=True,unique=True)
+    barcode_id = Field(String(13),required=True,unique=True)
     barcode_id.__doc__ = "(required) 7 digit string starting with TNQ and ending with 4 numbers. Ex: TNQ1234"
     equip_type = Field(Enum([u'CAMERA', u'LENS', u'MEMORY', u'EXTERNAL_FLASH', u'STROBE', u'TRIPOD', u'MONOPOD', u'ACCESSORY',u'35MM_CAMERA',u'MEDIUM_FORMAT_CAMERA',u'LARGE_FORMAT_CAMERA',u'SNAX',None]),required=True)
     pet_name = Field(String(30))

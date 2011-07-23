@@ -66,7 +66,7 @@ class User(AuthUser):
     phone = Field(String(20))
 
     checkouts = OneToMany('Checkout', inverse='user')
-    checkouts_active = OneToMany('Checkout', inverse='user',filter=Checkout.date_in==None)
+    checkouts_active = OneToMany('Checkout', inverse='user', filter=lambda c: c.date_in==None)
 
 class Equipment(Entity):
     """Equipment: What the User will be checking out.

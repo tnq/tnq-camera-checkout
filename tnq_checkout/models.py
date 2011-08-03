@@ -90,3 +90,9 @@ class Equipment(Entity):
     current_checkout = OneToOne('Checkout', inverse='equipment', filter=lambda c: c.date_in==None)
     serial = Field(String(128))
     notes = Field(String(500))
+
+    def __unicode__(self):
+        if self.pet_name:
+            return self.pet_name
+        else:
+            return self.barcode_id

@@ -56,33 +56,47 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     current_checkouts = [c for c in checkouts if c.equipment in equipment_list]
     old_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due > datetime.datetime.now()]
     expired_checkouts = [c for c in checkouts if c.equipment not in equipment_list and c.date_due <= datetime.datetime.now()]
-    message = "Hello %s,\n" % (staph_user.first_name)
-    message = message + """
-You've checked out the following equipment from Technique:
-%s
-""" % ("\n".join("-- " + c.equipment.full_name + "    |    *Return by %s*" % (_prettify_date(c.date_due)) for c in current_checkouts))
-    if old_checkouts:
-        message = message + """
-You also have the following equipment checked out---please remember to get these in on time:
-%s
-""" % ("\n".join("-- " + c.equipment.full_name + "    |    Return by %s" % (_prettify_date(c.date_due)) for c in old_checkouts))
-    if expired_checkouts:
-        message = message + """
-**The following equipment is expired--this is not good:**
-%s
-""" % ("\n".join("-- " + c.equipment.full_name + "    |    *Was supposed to be returned by %s*" % (_prettify_date(c.date_due)) for c in expired_checkouts))
-    message = message + """
-If you have any questions, please reply to this email.
 
-All the best, and keep taking photos!
---%s
 
-P.S. %s was the manboard member who checked your equipment out.""" % (from_name, manboard_user.full_name)
-    msg = MIMEText(message)
+    intro = "Hello %s,<br /><br />You've checked out the following equipment from Technique:<br /><br />" % (staph_user.first_name)
+    text = intro.replace("<br />", "\n")
+    html = intro + "\n<table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
+
+    for c in current_checkouts:
+        html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))
+        text += "-- %s|\t*Return by %s*\n" % (c.equipment.full_name.ljust(40), _prettify_date(c.date_due))
+
+    if old_checkouts or expired_checkouts:
+        midtro = "You also have the following equipment checked out -- please remeber to get these in on time:"
+        html += "</table>" + midtro + "<table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
+        text += "\n" + midtro + "\n\n"
+
+        for c in old_checkouts:
+            html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))
+            text += "-- %s|\t*Return by %s*\n" % (c.equipment.full_name.ljust(40), _prettify_date(c.date_due))
+
+        for c in expired_checkouts:
+            html += "<tr><td>%s</td><td>OVERDUE - Return immediately!</td></tr>\n" % (c.equipment.full_name,)
+            text += "-- %s|\t*OVERDUE - Return immediately!*\n" % (c.equipment.full_name.ljust(40),)
+
+    outro = "If you have any questions, please reply to this email.<br /><br />All the best, and keep taking photos!<br />--%s" %(from_name,)
+    if staph_user != manboard_user:
+        outro += "<br /><br />P.S. %s was the manboard memeber who checked your equipment out." % (manboard_user.full_name,)
+
+    html += "</table><br />" + outro
+    text += "\n" + outro.replace("<br />", "\n") 
+
+    msg = MIMEMultipart('alternative')
     msg['Subject'] = '[Technique Checkouts] Confirmation of Checkout'
     msg['From'] = "%s <%s>" % (from_name, from_email)
     msg['To'] = "%s <%s>" % (staph_user.full_name, staph_user.email)
     msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email)
+
+    text_part = MIMEText(text,'plain')
+    html_part = MIMEText(html,'html')
+    msg.attach(text_part)
+    msg.attach(html_part)
+
     sendMessage(from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
 def sendCheckinEmail(equipment_list,staph_user=None,manboard_user=None):

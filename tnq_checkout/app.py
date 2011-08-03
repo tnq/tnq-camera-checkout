@@ -196,7 +196,7 @@ class BorrowTask(component.Task):
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
                             existing_checkout.date_in = datetime.datetime.now()
-                            mail.sendCheckinEmail((item,), staph_user, manboard_user)
+                            mail.sendCheckinEmail((item,), staph_user, existing_checkout.user, manboard_user)
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
@@ -208,7 +208,7 @@ class BorrowTask(component.Task):
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
                 checkout.date_due = checkout.date_out + datetime.timedelta(hours=item.checkout_hours)
-            mail.sendCheckoutEmail(staph_user,manboard_user,items)
+            mail.sendCheckoutEmail(staph_user, manboard_user, items)
             comp.call(equipment_select, model="confirm")
 
 

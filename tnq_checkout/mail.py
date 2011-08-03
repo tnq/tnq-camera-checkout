@@ -67,7 +67,7 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
         text += "-- %s|\t*Return by %s*\n" % (c.equipment.full_name.ljust(40), _prettify_date(c.date_due))
 
     if old_checkouts or expired_checkouts:
-        midtro = "You also have the following equipment checked out -- please remeber to get these in on time:"
+        midtro = "You also have the following equipment checked out -- please remember to get these in on time:"
         html += "</table>" + midtro + "<table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
         text += "\n" + midtro + "\n\n"
 
@@ -99,25 +99,44 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
 
     sendMessage(from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
-def sendCheckinEmail(equipment_list,staph_user=None,manboard_user=None):
-    message = """The following equipment was just checked in%s:
+def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=None):
+    intro = "The following equipment was just checked in%s:<br /><br />" %(" by " + staph_user.full_name if staph_user else "")
 
-%s 
-%s""" % (" by "+staph_user.full_name if staph_user else "",
-     "\n".join("-" + e.full_name for e in equipment_list),
-     "\nThe supervising manboard member was " + manboard_user.full_name if manboard_user and staph_user != manboard_user else "")
-    message = message + """
+    returning_users = []
 
---%s""" % (from_name)
-    msg = MIMEText(message)
+    html = intro + "<table><tr><th>Equipment Name</th></tr>"
+    text = intro.replace("<br />", "\n")
+    
+    for e in equipment_list:
+        html += "<tr><td>%s</td></tr>\n" % (e.full_name, )
+        text += "-- %s\n" % (e.full_name, )
+
+    html += "</table>"
+
+    if manboard_user and staph_user != manboard_user:
+        midtro = "The supervising manboard member was %s.<br /><br />" %(manboard_user.full_name)
+        html += "<br />" + midtro
+        text += "\n" + midtro.replace("<br />", "\n")
+
+    outro = "-- %s" %(from_name,)
+    html += "<br /><br />" + outro
+    text += "\n\n" + outro 
+
+    msg = MIMEMultipart('alternative')
     msg['Subject'] = '[Technique Checkouts] Successful Equipment Check In'
     msg['From'] = "%s <%s>" % (from_name, from_email)
-    if staph_user:
-        msg['To'] = "%s <%s>" % (staph_user.full_name, staph_user.email)
-        msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email)
+    if old_user:
+        msg['To'] = "%s <%s>" % (old_user.full_name, old_user.email)
+        msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email,)
     else:
         msg['To'] = "%s <%s>" % (from_name, from_email)
-    sendMessage(from_email, [staph_user.email, manboard_user.email] if staph_user else [], msg.as_string())
+
+    text_part = MIMEText(text,'plain')
+    html_part = MIMEText(html,'html')
+    msg.attach(text_part)
+    msg.attach(html_part)
+
+    sendMessage(from_email, [old_user.email, manboard_user.email] if old_user else [], msg.as_string())
 
 def sendMessage(from_addresses, to_addresses, message_string):
     connection = SMTP()

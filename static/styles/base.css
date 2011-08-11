@@ -325,13 +325,14 @@ form.barcode .message-1,
 input[type="text"]{
 	position:absolute;
 	top:0;
-	left:0;
+	left:-400px;
 }
 
 input[type="submit"].hidden-action{
 	position: absolute;
 	top:30px;
-	left:0;
+	left:-400px;
+	display: none;
 }
 
 

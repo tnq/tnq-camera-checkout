@@ -7,6 +7,8 @@ from .models import *
 from .barcode import *
 import mail 
 
+from itertools import groupby
+
 class TaskSelector(object):
     """ TaskSelector provides the choice to either "borrow" or "return" equipment
     """
@@ -215,13 +217,16 @@ class BorrowTask(component.Task):
 class ReturnTask(component.Task):
     def go(self, comp):
         returned_items = comp.call(SelectEquipment(), model="return")
-        actually_returned_items = []
-        for returned_item in returned_items:
-            checkout = Checkout.get_by(equipment=returned_item,date_in=None)
-            if checkout:
-                actually_returned_items = actually_returned_items + [returned_item]
-                checkout.date_in = datetime.datetime.now()
-        mail.sendCheckinEmail(actually_returned_items)
+        actually_returned_items = [e for e in returned_items if e.current_checkout]
+
+        key_func = lambda x: x.current_checkout.user
+        sorted_items = sorted(actually_returned_items, key=key_func)
+
+        for user, group in groupby(sorted_items, key_func):
+           mail.sendCheckinEmail(list(group), old_user=user) 
+
+        for item in actually_returned_items:
+            item.current_checkout.date_in = datetime.datetime.now()
 
 class TaskWrapper(object):
     def __init__(self, label, body):

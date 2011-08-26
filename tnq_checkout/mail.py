@@ -125,18 +125,24 @@ def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=
     msg = MIMEMultipart('alternative')
     msg['Subject'] = '[Technique Checkouts] Successful Equipment Check In'
     msg['From'] = "%s <%s>" % (from_name, from_email)
+
     if old_user:
         msg['To'] = "%s <%s>" % (old_user.full_name, old_user.email)
-        msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email,)
+        to_addresses = [old_user.email]
     else:
         msg['To'] = "%s <%s>" % (from_name, from_email)
+        to_addresses = []
+
+    if manboard_user:
+        msg['CC'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email,)
+        to_addresses.append(manboard_user.email)
 
     text_part = MIMEText(text,'plain')
     html_part = MIMEText(html,'html')
     msg.attach(text_part)
     msg.attach(html_part)
 
-    sendMessage(from_email, [old_user.email, manboard_user.email] if old_user else [], msg.as_string())
+    sendMessage(from_email, to_addresses, msg.as_string())
 
 def sendMessage(from_addresses, to_addresses, message_string):
     connection = SMTP()

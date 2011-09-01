@@ -210,7 +210,8 @@ class BorrowTask(component.Task):
                 checkout.manboard_member = manboard_user
                 checkout.date_out = datetime.datetime.now()
                 checkout.date_due = checkout.date_out + datetime.timedelta(hours=item.checkout_hours)
-            mail.sendCheckoutEmail(staph_user, manboard_user, items)
+            if items:
+                mail.sendCheckoutEmail(staph_user, manboard_user, items)
             comp.call(equipment_select, model="confirm")
 
 

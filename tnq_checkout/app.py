@@ -185,6 +185,7 @@ class BorrowTask(component.Task):
             staph_user = comp.call(SelectStaph(manboard_user.full_name))
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
+            checkouts_to_email = []
             while not checkout_ready:
                 items = comp.call(equipment_select, model="borrow")
                 checkout_ready = True
@@ -197,11 +198,17 @@ class BorrowTask(component.Task):
                                                    (item.full_name,existing_checkout.user.full_name),
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
+                            checkouts_to_email.append(existing_checkout)
                             existing_checkout.date_in = datetime.datetime.now()
-                            mail.sendCheckinEmail((item,), staph_user, existing_checkout.user, manboard_user)
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
+
+            #Complete old checkouts, grouped by user
+            key_func = lambda x: x.user
+            sorted_checkouts = sorted(checkouts_to_email, key=key_func)
+            for user, group in groupby(sorted_checkouts, key_func):
+                mail.sendCheckinEmail(list(group), staph_user, old_user, manboard_user)        
             
             for item in items:
                 checkout = Checkout()

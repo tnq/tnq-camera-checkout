@@ -100,6 +100,8 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     sendMessage(from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
 def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=None):
+    checkouts = old_user.checkouts_active
+
     intro = "The following equipment was just checked in%s:<br /><br />" %(" by " + staph_user.full_name if staph_user else "")
 
     returning_users = []
@@ -112,6 +114,16 @@ def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=
         text += "-- %s\n" % (e.full_name, )
 
     html += "</table>"
+
+    if checkouts:
+        midtro = "You still have the following equipment checked out:"
+        text += "\n%s\n" %midtro
+        html += midtro + "<table><tr><th><Equipment Name></tr><th>DateDue</th></tr>"
+        
+        for c in checkouts:
+            html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))
+            text += "-- %s|\t*Return by %s*\n" % (c.equipment.full_name.ljust(40), _prettify_date(c.date_due))
+        html += "</table>"
 
     if manboard_user and staph_user != manboard_user:
         midtro = "The supervising manboard member was %s.<br /><br />" %(manboard_user.full_name)

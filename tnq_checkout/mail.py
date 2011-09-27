@@ -63,12 +63,12 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     html = intro + "\n<table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
 
     for c in current_checkouts:
-        html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))
+        html += "<tr><td>%s</td>\n<td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))
         text += "-- %s|\t*Return by %s*\n" % (c.equipment.full_name.ljust(40), _prettify_date(c.date_due))
 
     if old_checkouts or expired_checkouts:
         midtro = "You also have the following equipment checked out -- please remember to get these in on time:"
-        html += "</table>" + midtro + "<table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
+        html += "</table><br />" + midtro + "<br /><table><tr><th>Equipment Name</th><th>Due Date</th></tr>\n"
         text += "\n" + midtro + "\n\n"
 
         for c in old_checkouts:
@@ -81,7 +81,7 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
 
     outro = "If you have any questions, please reply to this email.<br /><br />All the best, and keep taking photos!<br />--%s" %(from_name,)
     if staph_user != manboard_user:
-        outro += "<br /><br />P.S. %s was the manboard memeber who checked your equipment out." % (manboard_user.full_name,)
+        outro += "<br /><br />P.S. %s was the manboard member who checked your equipment out." % (manboard_user.full_name,)
 
     html += "</table><br />" + outro
     text += "\n" + outro.replace("<br />", "\n") 
@@ -100,7 +100,7 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     sendMessage(from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
 def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=None):
-    checkouts = old_user.checkouts_active
+    checkouts = [c for c in old_user.checkouts_active if c.equipment not in equipment_list]
 
     intro = "The following equipment was just checked in%s:<br /><br />" %(" by " + staph_user.full_name if staph_user else "")
 
@@ -118,7 +118,7 @@ def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=
     if checkouts:
         midtro = "You still have the following equipment checked out:"
         text += "\n%s\n" %midtro
-        html += midtro + "<table><tr><th><Equipment Name></tr><th>DateDue</th></tr>"
+        html += "<br />" + midtro + "<br /><br /><table>\n<tr><th>Equipment Name</th><th>Date Due</th></tr>\n"
         
         for c in checkouts:
             html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, _prettify_date(c.date_due))

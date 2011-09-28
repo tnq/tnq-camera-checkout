@@ -68,6 +68,12 @@ class User(AuthUser):
     checkouts = OneToMany('Checkout', inverse='user')
     checkouts_active = OneToMany('Checkout', inverse='user', filter=lambda c: c.date_in==None)
 
+    memberships = OneToMany('AuthUserGroups', inverse='user')
+
+    def is_manboard(self):
+        manboard = AuthGroup.get_by(name="Manboard")
+        return manboard in [m.group for m in self.memberships]
+
 class Equipment(Entity):
     """Equipment: What the User will be checking out.
     
@@ -96,3 +102,18 @@ class Equipment(Entity):
             return self.pet_name
         else:
             return self.barcode_id
+
+class AuthGroup(Entity):
+    """AuthGroup: A group of users with specific permissions.
+    
+    The main group we use is Manboard.
+    """
+    using_options(tablename="auth_group")
+    name = Field(String(80),required=True,unique=True)
+
+class AuthUserGroups(Entity):
+    """AuthUserGroup: The table specifying AuthGroup memberships.
+    """
+    using_options(tablename="auth_user_groups")
+    user = ManyToOne('User')
+    group = ManyToOne('AuthGroup')

@@ -179,7 +179,7 @@ class RootView(component.Task):
 class BorrowTask(component.Task):
     def go(self, comp):
         manboard_user = comp.call(ScanUserBarcode(["Scan manboard member's barcode", "Typically, the barcode on the back of an MIT ID card."]), model="manboard")
-        if not manboard_user.is_staff:
+        if not manboard_user.is_manboard():
             comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
             staph_user = comp.call(SelectStaph(manboard_user.full_name))

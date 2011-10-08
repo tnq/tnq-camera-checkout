@@ -208,7 +208,7 @@ class BorrowTask(component.Task):
             key_func = lambda x: x.user
             sorted_checkouts = sorted(checkouts_to_email, key=key_func)
             for user, group in groupby(sorted_checkouts, key_func):
-                mail.sendCheckinEmail(list(group), staph_user, old_user=user, manboard_user)        
+                mail.sendCheckinEmail(list(group), staph_user, user, manboard_user)        
             
             for item in items:
                 checkout = Checkout()

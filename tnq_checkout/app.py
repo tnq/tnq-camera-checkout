@@ -210,6 +210,8 @@ class BorrowTask(component.Task):
             for user, group in groupby(sorted_checkouts, key_func):
                 mail.sendCheckinEmail([c.equipment for c in list(group)], staph_user, user, manboard_user)        
             
+            del group #The groupby object can't be pickled
+            
             for item in items:
                 checkout = Checkout()
                 checkout.user = staph_user

@@ -24,7 +24,7 @@ body{
 	background: -webkit-gradient( linear, center bottom, center top, color-stop( 0, rgba(225,225,225,1) ), color-stop( .5, rgba(252,252,252,1) ) ) no-repeat rgba(252,252,252,1);
 }
 
-a:active{
+a:active, .active_link {
 	color: #cccccc;
 	background: #666666;
 }

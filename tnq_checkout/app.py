@@ -5,7 +5,7 @@ import datetime
 from nagare import presentation, component, util, var, log
 from .models import *
 from .barcode import *
-import mail 
+import mail
 
 from itertools import groupby
 
@@ -162,6 +162,7 @@ def render(self, h, comp, model, *args):
             a = h.a("Return Equipment")
         else:
             a = h.a("Finish Checkout")
+        a.set("onClick", """this.innerHTML = "Processing..."; this.className = "active_link"; old = this.clicked; this.clicked = true; return old != true;""")
         h << a.action(lambda: comp.answer(self.equipment))
 
     return h.root

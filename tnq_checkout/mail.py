@@ -9,12 +9,111 @@ from smtplib import SMTP
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from itertools import groupby
+
 from_name = "H.R.H. Grogo"
 from_email = "tnq-checkouts@mit.edu"
 host = "outgoing.mit.edu"
 
 def _prettify_date(date):
     return date.strftime("%A, %B %d at %I:%M %p")
+
+def sendEquipmentDueEmails():
+    active_checkouts = Checkout.query.filter(Checkout.date_in == None).order_by(Checkout.user).all()
+
+    for user, group in groupby(active_checkouts, lambda x: x.user):
+        user_checkouts = list(group)
+        user_checkouts.sort(key=lambda x: x.date_due) # Can this be taken care of by SQL alchemy?  With groupby mess it up?
+
+        #If the user has any due checkouts, email them
+        if user_checkouts[0].date_due.date() <= datetime.datetime.now().date():
+            due = [c for c in user_checkouts if c.date_due.date() <= datetime.datetime.now().date()]
+            not_due = [c for c in user_checkouts if c not in due]
+
+            due_equipment_table = _makeCheckoutTable(due)
+
+            if not_due:
+                not_due_equipment_table = _makeCheckoutTable(not_due)
+                not_due_equipment_table['HTML'] = "You also have the following equipment for a little while longer:<br />%s<br />" % not_due_equipment_table['HTML']
+                not_due_equipment_table['TEXT'] = "\nYou also have the following equipment for a little while longer:\n%s" % not_due_equipment_table['TEXT']
+            else:
+                not_due_equipment_table = {'HTML' : "", 'TEXT' : ""}
+
+            html = """   
+Hello {name},<br />
+<br />
+You have some equipment due today!  Please return the following items:<br />
+
+{due_equipment_table}<br />
+<br />
+{not_due_equipment_table}
+If you have any questions just reply to this email.<br />
+<br />
+Thanks, and keep taking pictures!<br />
+-- H.R.H. Grogo
+            """.format( name=user.first_name, 
+                        due_equipment_table = due_equipment_table['HTML'],
+                        not_due_equipment_table = not_due_equipment_table['HTML'] )
+
+            text = """Hello {name},
+
+You have some equipment due today!  Please return the following items:
+
+{due_equipment_table}{not_due_equipment_table}
+
+If you have any questions just reply to this email.
+
+Thanks, and keep taking pictures!
+
+-- H.R.H. Grogo
+""".format( name=user.first_name, 
+            due_equipment_table = due_equipment_table['TEXT'],
+            not_due_equipment_table = not_due_equipment_table['TEXT'] )
+
+            msg = MIMEMultipart('alternative')
+
+            msg['Subject'] = '[Technique Checkouts] Equipment Due'
+            msg['From'] = "tnq-checkouts@mit.edu"
+            msg['To'] = "%s <%s>" % (user.full_name, user.email)
+            text_part = MIMEText(text,'plain')
+            html_part = MIMEText(html,'html')
+            msg.attach(text_part)
+            msg.attach(html_part)
+            sendMessage(from_email, ["tnq-checkouts@mit.edu"], msg.as_string())
+
+def _makeCheckoutTable(checkouts):
+    """
+    Accepts a list of Checkout objects, and returns a dictionary of text representations.
+
+    The 'HTML' styling is of the form
+
+    <tr><td>Equipment Name</td><td>Date Due</td></tr> {{newline}}
+
+    The Date Due field will either have the date due or "OVERDUE!  Return immediately!"
+
+    while the 'TEXT' styling is something like
+
+   -- Nikon SB-900 Speedlight DIFFUSER        |	*Return by Friday, October 14 at 06:49 PM*
+
+    """
+    
+    html = "<table><tr><th>Equipment Name</th><th>Date Due</th></tr>"
+    text = ""
+
+    for c in checkouts:
+        if c.date_due < datetime.datetime.now():
+            date_string = "OVERDUE!  Return Immediately!"
+            date_string_text = date_string
+        else:
+            date_string = _prettify_date(c.date_due)
+            date_string_text = "*Return by: %s*" % date_string
+
+        html += "<tr><td>%s</td><td>%s</td></tr>\n" % (c.equipment.full_name, date_string)
+        text += "-- %s|\t%s\n" % (c.equipment.full_name.ljust(40), date_string)
+
+    html += "</table>"
+
+    return {'HTML' : html, 'TEXT' : text }        
 
 def sendDigestEmail():
     equipment = Equipment.query.join(Equipment.current_checkout).filter(Equipment.current_checkout != None).order_by(Checkout.date_due).all()

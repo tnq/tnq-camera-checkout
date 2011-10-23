@@ -237,7 +237,7 @@ form.barcode .message-1,
 .scrollview-container.equipment.return{
 	height:305px;
 }
-.scrollview-container.equipment.confirm{
+.scrollview-container.equipment.confirm, .scrollview-container.equipment.overdue{
 	height:297px;
 }
 
@@ -280,12 +280,12 @@ form.barcode .message-1,
 	margin-left: .5em;
 }
 
-.equipment.confirm .scrollview-item div.name{
+.equipment.confirm .scrollview-item div.name, .equipment.overdue .scrollview-item div.name{
 	width:470px;
 	padding: .5em 0.5em;
 }
 
-.equipment.confirm .scrollview-item div.due{
+.equipment.confirm .scrollview-item div.due, .equipment.overdue .scrollview-item div.due{
 	display: inline-table;
 	font-size: .8em;
 	padding-top:2px;
@@ -317,7 +317,7 @@ form.barcode .message-1,
 	height: 71px;
 }
 
-.equipment.confirm .scrollview-item img.icon{
+.equipment.confirm .scrollview-item img.icon, .equipment.overdue .scrollview-item img.icon{
 	width:40px;
 	height:35px;
 }

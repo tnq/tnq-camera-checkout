@@ -106,11 +106,18 @@ class SelectEquipment(object):
     def remove_equipment(self, equipment):
         self.equipment.remove(equipment)
 
+    def set_equipment(self, equipment):
+        self.equipment = list(equipment)
+
 @presentation.render_for(SelectEquipment, model="borrow")
 @presentation.render_for(SelectEquipment, model="confirm")
+@presentation.render_for(SelectEquipment, model="overdue")
 @presentation.render_for(SelectEquipment, model="return")
 def render(self, h, comp, model, *args):
-    if model == "confirm":
+    if model == "overdue":
+        with h.div(class_="message message-1 confirm"):
+            h << "%s has the following OVERDUE equipment:" % (self.staph.first_name)
+    elif model == "confirm":
         with h.div(class_="message message-1 confirm"):
             h << "%s has checked out:" % (self.staph.first_name)
     else:
@@ -148,7 +155,11 @@ def render(self, h, comp, model, *args):
                             h << e.model
                         if e.pet_name:
                             h << h.strong("(%s)" % (e.pet_name))
-                    if model == "confirm":
+                    if model == "overdue":
+                        with h.div(class_="due"):
+                            h << h.strong("Due: ")
+                            h << e.current_checkout.date_due.strftime("%m/%d")
+                    elif model == "confirm":
                         with h.div(class_="due"):
                             h << h.strong("Due: ")
                             h << e.checkout_hours/24
@@ -156,7 +167,9 @@ def render(self, h, comp, model, *args):
                     else:
                         h << h.a("X",class_="ex").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
-        if model == "confirm":
+        if model == "overdue":
+            a = h.a("Continue Anyway")
+        elif model == "confirm":
             a = h.a("Okay")
         elif model == "return":
             a = h.a("Return Equipment")
@@ -184,6 +197,14 @@ class BorrowTask(component.Task):
             comp.call(Confirm("You must be a manboard member to authorize a checkout."))
         else:
             staph_user = comp.call(SelectStaph(manboard_user.full_name))
+
+            old_checkouts = staph_user.checkouts_overdue
+            if old_checkouts:
+                old_checkout_equipment = [c.equipment for c in old_checkouts]
+                old_checkout_equipment_select = SelectEquipment(manboard_user, staph_user)
+                old_checkout_equipment_select.set_equipment(old_checkout_equipment)
+                comp.call(old_checkout_equipment_select, model="overdue")
+
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
             checkouts_to_email = []

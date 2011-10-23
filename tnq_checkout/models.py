@@ -2,6 +2,7 @@ from elixir import *
 from elixir import options
 import sqlalchemy
 from sqlalchemy import MetaData
+from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.sql.expression import func
 from sqlextensions import Enum
 
@@ -67,6 +68,7 @@ class User(AuthUser):
 
     checkouts = OneToMany('Checkout', inverse='user')
     checkouts_active = OneToMany('Checkout', inverse='user', filter=lambda c: c.date_in==None)
+    checkouts_overdue = OneToMany('Checkout', inverse='user', filter=lambda c: and_(c.date_in==None, c.date_due < func.current_timestamp()))
 
     memberships = OneToMany('AuthUserGroups', inverse='user')
 

@@ -79,7 +79,7 @@ Thanks, and keep taking pictures!
             html_part = MIMEText(html,'html')
             msg.attach(text_part)
             msg.attach(html_part)
-            sendMessage(from_email, ["tnq-checkouts@mit.edu"], msg.as_string())
+            sendMessage(from_email, [user.email, "tnq-checkouts@mit.edu"], msg.as_string())
 
 def _makeCheckoutTable(checkouts):
     """

@@ -189,7 +189,6 @@ class RootView(component.Task):
             elif task == "return":
                 comp.call(TaskWrapper("return", component.Component(ReturnTask())))
 
-
 class BorrowTask(component.Task):
     def go(self, comp):
         manboard_user = comp.call(ScanUserBarcode(["Scan manboard member's barcode", "Typically, the barcode on the back of an MIT ID card."]), model="manboard")
@@ -216,12 +215,12 @@ class BorrowTask(component.Task):
 
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
-            checkouts_to_email = []
+            equipment_to_checkin = []
             while not checkout_ready:
                 items = comp.call(equipment_select, model="borrow")
                 checkout_ready = True
                 for item in items:
-                    existing_checkout = Checkout.get_by(equipment=item,date_in=None)
+                    existing_checkout = item.current_checkout
                     if existing_checkout:
                         choice = 0;
                         if staph_user != existing_checkout.user:
@@ -229,23 +228,14 @@ class BorrowTask(component.Task):
                                                    (item.full_name,existing_checkout.user.full_name),
                                                    buttons=["Yes", "No"]))
                         if choice == 0:
-                            checkouts_to_email.append(existing_checkout)
-                            existing_checkout.date_in = datetime.datetime.now()
+                            equipment_to_checkin.append(item)
                         else:
                             equipment_select.remove_equipment(item)
                             checkout_ready = False
 
-            #Complete old checkouts, grouped by user
-            key_func = lambda x: x.user
-            sorted_checkouts = sorted(checkouts_to_email, key=key_func)
-            
-            group = "" #Instantiate group in case the loop has no items
-            
-            for user, group in groupby(sorted_checkouts, key_func):
-                mail.sendCheckinEmail([c.equipment for c in list(group)], staph_user, user, manboard_user)        
-            
-            del group #The groupby object can't be pickled
-            
+            # Complete old checkouts
+            return_equipment(equipment_to_checkin, by_user=staph_user, by_manboard_user=manboard_user)
+
             for item in items:
                 checkout = Checkout()
                 checkout.user = staph_user
@@ -257,32 +247,35 @@ class BorrowTask(component.Task):
                 mail.sendCheckoutEmail(staph_user, manboard_user, items)
             comp.call(equipment_select, model="confirm")
 
+def return_equipment(equipment, by_user=None, by_manboard_user=None):
+    actually_returned_items = [e for e in equipment if e.current_checkout]
+
+    key_func = lambda x: x.current_checkout.user
+    sorted_items = sorted(actually_returned_items, key=key_func)
+
+    users_to_penalize = set()
+
+    for item in actually_returned_items:
+        if item.current_checkout.date_due + datetime.timedelta(hours=24) < datetime.datetime.now():
+            users_to_penalize.add(item.current_checkout.user)
+
+    for user in users_to_penalize:
+        restriction = UserRestriction()
+        restriction.user = user
+        restriction.date_start = datetime.datetime.now()
+        restriction.date_end = datetime.datetime.now() + datetime.timedelta(days=7)
+
+    for user, group in groupby(sorted_items, key_func):
+        mail.sendCheckinEmail(list(group), old_user=user, staph_user=by_user, manboard_user=by_manboard_user)
+
+    for item in actually_returned_items:
+        item.current_checkout.date_in = datetime.datetime.now()
 
 class ReturnTask(component.Task):
     def go(self, comp):
         returned_items = comp.call(SelectEquipment(), model="return")
-        actually_returned_items = [e for e in returned_items if e.current_checkout]
 
-        key_func = lambda x: x.current_checkout.user
-        sorted_items = sorted(actually_returned_items, key=key_func)
-
-        users_to_penalize = set()
-
-        for item in actually_returned_items:
-            if item.current_checkout.date_due < datetime.datetime.now():
-                users_to_penalize.add(item.current_checkout.user)
-
-        for user in users_to_penalize:
-            restriction = UserRestriction()
-            restriction.user = user
-            restriction.date_start = datetime.datetime.now()
-            restriction.date_end = datetime.datetime.now() + datetime.timedelta(days=7)
-
-        for user, group in groupby(sorted_items, key_func):
-           mail.sendCheckinEmail(list(group), old_user=user) 
-
-        for item in actually_returned_items:
-            item.current_checkout.date_in = datetime.datetime.now()
+        return_equipment(returned_items)
 
 class TaskWrapper(object):
     def __init__(self, label, body):

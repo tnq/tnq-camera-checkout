@@ -205,6 +205,15 @@ class BorrowTask(component.Task):
                 old_checkout_equipment_select.set_equipment(old_checkout_equipment)
                 comp.call(old_checkout_equipment_select, model="overdue")
 
+            active_restrictions = staph_user.restrictions_active
+            if active_restrictions:
+                choice = comp.call(Confirm("%s is prohibited from checking out equipment until %s. Are you sure you wish to override this?" %
+                                           (staph_user.full_name, active_restrictions[0].date_end),
+                                           buttons=["Cancel", "Override"]
+                                           ))
+                if not choice:
+                    return
+
             equipment_select = SelectEquipment(manboard_user, staph_user)
             checkout_ready = False
             checkouts_to_email = []
@@ -256,6 +265,18 @@ class ReturnTask(component.Task):
 
         key_func = lambda x: x.current_checkout.user
         sorted_items = sorted(actually_returned_items, key=key_func)
+
+        users_to_penalize = set()
+
+        for item in actually_returned_items:
+            if item.current_checkout.date_due < datetime.datetime.now():
+                users_to_penalize.add(item.current_checkout.user)
+
+        for user in users_to_penalize:
+            restriction = UserRestriction()
+            restriction.user = user
+            restriction.date_start = datetime.datetime.now()
+            restriction.date_end = datetime.datetime.now() + datetime.timedelta(days=7)
 
         for user, group in groupby(sorted_items, key_func):
            mail.sendCheckinEmail(list(group), old_user=user) 

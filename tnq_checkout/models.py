@@ -70,11 +70,24 @@ class User(AuthUser):
     checkouts_active = OneToMany('Checkout', inverse='user', filter=lambda c: c.date_in==None)
     checkouts_overdue = OneToMany('Checkout', inverse='user', filter=lambda c: and_(c.date_in==None, c.date_due < func.current_timestamp()))
 
+    restrictions = OneToMany('UserRestriction', inverse='user', order_by='-date_end')
+    restrictions_active = OneToMany('UserRestriction', inverse='user', order_by='-date_end', filter=lambda r: and_(r.date_start < func.current_timestamp(), r.date_end > func.current_timestamp()))
+
     memberships = OneToMany('AuthUserGroups', inverse='user')
 
     def is_manboard(self):
         manboard = AuthGroup.get_by(name="Manboard")
         return manboard in [m.group for m in self.memberships]
+
+class UserRestriction(Entity):
+    """UserRestriction: Time periods when the user is not allowed to make new checkouts.
+    """
+    using_options(tablename="checkout_userrestriction")
+
+    user = ManyToOne('User', required=True)
+
+    date_start = Field(DATETIME, required=True)
+    date_end = Field(DATETIME, required=True)
 
 class Equipment(Entity):
     """Equipment: What the User will be checking out.

@@ -16,7 +16,10 @@ from_email = "tnq-checkouts@mit.edu"
 host = "outgoing.mit.edu"
 
 def _prettify_date(date):
-    return date.strftime("%A, %B %d at %I:%M %p")
+    if date:
+        return date.strftime("%A, %B %d at %I:%M %p")
+    else:
+        return "Unknown"
 
 def sendEquipmentDueEmails():
     active_checkouts = Checkout.query.filter(Checkout.date_in == None).order_by(Checkout.user).all()
@@ -116,7 +119,7 @@ def _makeCheckoutTable(checkouts):
     return {'HTML' : html, 'TEXT' : text }        
 
 def formatEquipmentList(equipment, html="", text=""):
-    html += "<table><tr><th>Equipment Name</th><th>Equipment Model</th><th>Last Checkout</th><th>Date Due</th></tr>\n"
+    html += "<table><tr><th>Equipment Name</th><th>Equipment Model</th><th>Last Checkout</th><th>Date Due</th><th>Date In</th></tr>\n"
 
     for e in equipment:
         if e.pet_name:
@@ -126,8 +129,8 @@ def formatEquipmentList(equipment, html="", text=""):
         html += "<tr><td>%s</td><td>%s %s</td>" % (name, e.brand, e.model)
         text += "%s\t\t(%s %s)\t\t" % (name, e.brand, e.model)
         if e.last_checkout:
-            html += "<td>%s</td><td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
-            text += "%s\t\t%s\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
+            html += "<td>%s</td><td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
+            text += "%s\t\t%s\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
         else:
             html += "<td></td><td><i>Never!</i></td></tr>\n"
             text += "\t\tNever\n"
@@ -151,7 +154,7 @@ def sendInventoryEmail(manboard_user, equip_type, missing_equipment, out_equipme
                             (in_equipment, "verified to be present")):
         if equipment:
             message = "\n\n%d pieces of equipment are %s:\n\n" % (len(equipment), name)
-            html += message.replace("<br />", "\n")
+            html += message.replace("\n", "<br />\n")
             text += message
 
             html, text = formatEquipmentList(equipment, html, text)

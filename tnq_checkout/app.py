@@ -327,7 +327,7 @@ class InventoryTask(component.Task):
             equip_type = comp.call(EquipmentTypeList())
             unselect_equipment = UnselectEquipment(manboard_user)
 
-            all_equipment = list(Equipment.query.filter_by(equip_type=equip_type))
+            all_equipment = list(Equipment.query.filter_by(equip_type=equip_type, status="ACTIVE"))
 
             in_equipment = set(e for e in all_equipment if not e.current_checkout)
             out_equipment = set(e for e in all_equipment if e.current_checkout)

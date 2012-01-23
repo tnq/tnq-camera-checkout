@@ -115,6 +115,52 @@ def _makeCheckoutTable(checkouts):
 
     return {'HTML' : html, 'TEXT' : text }        
 
+def formatEquipmentList(equipment, html="", text=""):
+    html += "<table><tr><th>Equipment Name</th><th>Equipment Model</th><th>Last Checkout</th><th>Date Due</th></tr>\n"
+
+    for e in equipment:
+        if e.pet_name:
+            name = e.pet_name
+        else:
+            name = e.barcode_id
+        html += "<tr><td>%s</td><td>%s %s</td><td>%s</td><td>%s</td></tr>\n" %(name, e.brand, e.model, e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
+        text += "%s\t\t(%s %s)\t\t%s\t\t%s\n" %(name, e.brand, e.model, e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
+
+    html += "</table>"
+
+    return html, text
+
+def sendInventoryEmail(manboard_user, equip_type, missing_equipment, out_equipment, in_equipment):
+    msg = MIMEMultipart('alternative')
+
+    intro = """Hello TNQ PhotoEds,
+
+%s performed an inventory of %s equipment.
+
+""" % (manboard_user.full_name, equip_type)
+    html = intro.replace("\n", "<br />")
+    text = intro
+
+    for equipment, name in ((missing_equipment, "MISSING"),
+                            (out_equipment, "currently CHECKED OUT"),
+                            (in_equipment, "verified to be present")):
+        if equipment:
+            message = "\n\n%d pieces of equipment are %s:\n\n" % (len(equipment), name)
+            html += message.replace("<br />", "\n")
+            text += message
+
+            html, text = formatEquipmentList(equipment, html, text)
+
+    msg['Subject'] = '[Technique Checkouts] %s Inventory' % equip_type
+    msg['From'] = "tnq-checkouts@mit.edu"
+    msg['To'] = "tnq-checkouts@mit.edu"
+    msg['Cc'] = "%s <%s>" % (manboard_user.full_name, manboard_user.email)
+    text_part = MIMEText(text,'plain')
+    html_part = MIMEText(html,'html')
+    msg.attach(text_part)
+    msg.attach(html_part)
+    sendMessage(from_email, ["tnq-checkouts@mit.edu", manboard_user.email], msg.as_string())
+
 def sendDigestEmail():
     equipment = Equipment.query.join(Equipment.current_checkout).filter(Equipment.current_checkout != None).order_by(Checkout.date_due).all()
     msg = MIMEMultipart('alternative')
@@ -122,19 +168,13 @@ def sendDigestEmail():
     #If anything is actually checked out
     if equipment:
         intro = "Hello TNQ PhotoEds,<br /><br />The following equipment is currently checked out:<br /><br />"
-        html = intro + "<table><tr><th>Equipment Name</th><th>Equipment Model</th><th>Checker-Outer</th><th>Date Due</th></tr>\n"
+        html = intro
         text = intro.replace("<br />", "\n")
-        
-        for e in equipment:
-            if e.pet_name:
-                name = e.pet_name
-            else:
-                name = e.barcode_id
-            html += "<tr><td>%s</td><td>%s %s</td><td>%s</td><td>%s</td></tr>\n" %(name, e.brand, e.model, e.current_checkout.user.full_name, _prettify_date(e.current_checkout.date_due))
-            text += "%s\t\t(%s %s)\t\t%s\t\t%s\n" %(name, e.brand, e.model, e.current_checkout.user.full_name, _prettify_date(e.current_checkout.date_due))
+
+        html, text = formatEquipmentList(equipment, html, text)
 
         outro = "<br /><br />This message powered by your friendly neighborhood Nagare script."
-        html += "</table>" + outro
+        html += outro
         text += outro.replace("<br />", "\n")
 
     else:

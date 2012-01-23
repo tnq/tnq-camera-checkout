@@ -9,7 +9,7 @@ class ScanBarcode(object):
     def __init__(self, messages=[]):
         self.messages = messages
     def handle_scan(self, comp, barcode):
-        pass
+        comp.answer(barcode)
 
 class ScanUserBarcode(ScanBarcode):
     def handle_scan(self, comp, barcode):

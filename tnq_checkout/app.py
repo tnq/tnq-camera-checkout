@@ -9,20 +9,26 @@ import mail
 
 from itertools import groupby
 
+def equipment_icon(h, equip_type):
+    return h.img(src="/static/tnq_checkout/images/icons/%s.svg" % (equip_type),
+                 class_="icon")
+
 class TaskSelector(object):
     """ TaskSelector provides the choice to either "borrow" or "return" equipment
     """
-    pass
+    def __init__(self):
+        self.scan = component.Component(ScanBarcode([]))
 
 @presentation.render_for(TaskSelector)
 def render(self, h, comp, *args):
+    self.scan.on_answer(lambda _: comp.answer(_))
+    h << self.scan
     with h.div(class_='task-selector ui-helper-clearfix'):
         with h.div(class_='borrow'):
             h << h.a('borrow').action(lambda: comp.answer("borrow"))
         with h.div(class_='return'):
             h << h.a('return').action(lambda: comp.answer("return"))
     return h.root
-
 
 
 class Confirm(object):
@@ -55,24 +61,36 @@ def render(self, h, comp, *args):
             h << h.input(type='submit', value=button, class_="button-%s"%(i)).action(lambda i=i: comp.answer(i))
     return h.root
 
+class ItemList(object):
+    """ Displays a list of items
+    """
+    def get_items(self):
+        return range(1,4)
 
-class UserList(object):
+    def render_item(self, h, comp, item):
+        h << h.a(item).action(lambda item=item: comp.answer(item))
+
+class UserList(ItemList):
     """ Displays a list of TNQ users
     """
-    pass
+    def get_items(self):
+        return User.query.order_by(User.last_name, User.first_name)
 
-@presentation.render_for(UserList)
+    def render_item(self, h, comp, u):
+        h << h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u))
+
+@presentation.render_for(ItemList)
 def render(self, h, comp, *args):
-    users = User.query.order_by(User.last_name, User.first_name)
-    
+    items = self.get_items()
+
     h.head.javascript_url('/static/tnq_checkout/scripts/scrollview.js')
     h.head.javascript_url('/static/tnq_checkout/scripts/vanillaos.js')
     
     with h.div(class_="scrollview-container",scrollviewbars="none",scrollviewmode="table",scrollviewenabledscrollx="no"):
         with h.div(class_="scrollview-content"):
-            for u in users:
+            for item in items:
                 with h.div(class_="scrollview-item"):
-                    h << h.a(u.first_name + " " + u.last_name).action(lambda u=u: comp.answer(u))
+                    self.render_item(h, comp, item)
     return h.root
 
 class SelectStaph(object):
@@ -97,7 +115,10 @@ class SelectEquipment(object):
         self.staph = staph
         self.scan = component.Component(ScanEquipmentBarcode())
         self.equipment = []
-        self.scan.on_answer(self.add_equipment)
+        self.scan.on_answer(self.scan_equipment)
+
+    def scan_equipment(self, equipment):
+        self.add_equipment(equipment)
 
     def add_equipment(self, equipment):
         if equipment not in self.equipment:
@@ -109,10 +130,15 @@ class SelectEquipment(object):
     def set_equipment(self, equipment):
         self.equipment = list(equipment)
 
+class UnselectEquipment(SelectEquipment):
+    def scan_equipment(self, equipment):
+        self.remove_equipment(equipment)
+
 @presentation.render_for(SelectEquipment, model="borrow")
 @presentation.render_for(SelectEquipment, model="confirm")
 @presentation.render_for(SelectEquipment, model="overdue")
 @presentation.render_for(SelectEquipment, model="return")
+@presentation.render_for(UnselectEquipment, model="inventory")
 def render(self, h, comp, model, *args):
     if model == "overdue":
         with h.div(class_="message message-1 confirm"):
@@ -123,10 +149,13 @@ def render(self, h, comp, model, *args):
     else:
         if model == "return":
             prompt = [" ", "scan equipment to return"]
+        elif model == "inventory":
+            prompt = ["scan equipment to inventory"]
         else:
             prompt = ["<strong>%s</strong> is checking out equipment." % (self.manboard.full_name),
                       "scan equipment"]
-            if self.manboard != self.staph:
+
+            if self.staph and self.manboard != self.staph:
                 prompt[0] = prompt[0][:-1] + " for <strong>%s</strong>." % (self.staph.full_name)
         self.scan().messages = prompt
         h << self.scan
@@ -146,8 +175,7 @@ def render(self, h, comp, model, *args):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
                     
-                    h << h.img(src="/static/tnq_checkout/images/icons/%s.svg" % (e.equip_type),
-                               class_="icon")
+                    h << equipment_icon(h, e.equip_type)
                     with h.div(class_="name"):
                         h << e.brand
                         if e.model:
@@ -173,6 +201,8 @@ def render(self, h, comp, model, *args):
             a = h.a("Okay")
         elif model == "return":
             a = h.a("Return Equipment")
+        elif model == "inventory":
+            a = h.a("Finish Inventory")
         else:
             a = h.a("Finish Checkout")
         a.set("onClick", """this.innerHTML = "Processing..."; this.className = "active_link"; old = this.clicked; this.clicked = true; return old != true;""")
@@ -188,6 +218,8 @@ class RootView(component.Task):
                 comp.call(TaskWrapper("borrow", component.Component(BorrowTask())))
             elif task == "return":
                 comp.call(TaskWrapper("return", component.Component(ReturnTask())))
+            elif task == "TNQ_INV":
+                comp.call(TaskWrapper("inventory", component.Component(InventoryTask())))
 
 class BorrowTask(component.Task):
     def go(self, comp):
@@ -276,6 +308,36 @@ class ReturnTask(component.Task):
         returned_items = comp.call(SelectEquipment(), model="return")
 
         return_equipment(returned_items)
+
+class EquipmentTypeList(ItemList):
+    def get_items(self):
+        return [_ for (_,) in session.query(Equipment.equip_type.distinct())]
+
+    def render_item(self, h, comp, item):
+        h << h.a([equipment_icon(h, item),
+                  item]).action(lambda item=item: comp.answer(item))
+
+class InventoryTask(component.Task):
+    def go(self, comp):
+        manboard_user = comp.call(ScanUserBarcode(["Scan manboard member's barcode", "Typically, the barcode on the back of an MIT ID card."]), model="manboard")
+        if not manboard_user.is_manboard():
+            comp.call(Confirm("You must be a manboard member to perform an inventory."))
+        else:
+            equip_type = comp.call(EquipmentTypeList())
+            unselect_equipment = UnselectEquipment(manboard_user)
+
+            all_equipment = list(Equipment.query.filter_by(equip_type=equip_type))
+
+            in_equipment = set(e for e in all_equipment if not e.current_checkout)
+            out_equipment = set(e for e in all_equipment if e.current_checkout)
+
+            unselect_equipment.set_equipment(in_equipment)
+
+            missing_equipment = set(comp.call(unselect_equipment, model="inventory"))
+
+            in_equipment -= missing_equipment
+
+            mail.sendInventoryEmail(manboard_user, equip_type, missing_equipment, out_equipment, in_equipment)
 
 class TaskWrapper(object):
     def __init__(self, label, body):

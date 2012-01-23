@@ -109,6 +109,7 @@ class Equipment(Entity):
     manual_link.__doc__ = "link to the pdf manual of the equipment"
     checkouts = OneToMany('Checkout')
     current_checkout = OneToOne('Checkout', inverse='equipment', filter=lambda c: c.date_in==None)
+    last_checkout = OneToOne('Checkout', inverse='equipment', viewonly=True, order_by="-date_due")
     serial = Field(String(128))
     notes = Field(String(500))
 

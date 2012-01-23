@@ -175,8 +175,8 @@ def render(self, h, comp, model, *args):
         with h.div(class_="scrollview-content"):
             for e in self.equipment:
                 with h.div(class_="scrollview-item scrollview-disabledrag ui-helper-clearfix"):
-                    
-                    h << equipment_icon(h, e.equip_type)
+                    if model != "inventory":
+                        h << equipment_icon(h, e.equip_type)
                     with h.div(class_="name"):
                         h << e.brand
                         if e.model:
@@ -193,7 +193,7 @@ def render(self, h, comp, model, *args):
                             h << h.strong("Due: ")
                             h << e.checkout_hours/24
                             h << " day%s" % ('' if e.checkout_hours == 24 else 's')
-                    else:
+                    elif model != "inventory":
                         h << h.a("X",class_="ex").action(lambda e=e: self.remove_equipment(e))
     with h.div(class_="finish-checkout"):
         if model == "overdue":

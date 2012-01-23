@@ -280,6 +280,11 @@ form.barcode .message-1,
 	margin-left: .5em;
 }
 
+.equipment.inventory .scrollview-item div.name {
+	padding: 0px;
+	width: 100%;
+}
+
 .equipment.confirm .scrollview-item div.name, .equipment.overdue .scrollview-item div.name{
 	width:470px;
 	padding: .5em 0.5em;

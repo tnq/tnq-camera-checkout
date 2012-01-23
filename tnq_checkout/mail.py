@@ -123,10 +123,10 @@ def formatEquipmentList(equipment, html="", text=""):
             name = e.pet_name
         else:
             name = e.barcode_id
-        html += "<tr><td>%s</td><td>%s %s</td><td>%s</td>" % (name, e.brand, e.model)
+        html += "<tr><td>%s</td><td>%s %s</td>" % (name, e.brand, e.model)
         text += "%s\t\t(%s %s)\t\t" % (name, e.brand, e.model)
         if e.last_checkout:
-            html += "<td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
+            html += "<td>%s</td><td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
             text += "%s\t\t%s\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due))
         else:
             html += "<td></td><td><i>Never!</i></td></tr>\n"

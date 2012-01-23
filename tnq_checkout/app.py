@@ -125,7 +125,8 @@ class SelectEquipment(object):
             self.equipment.insert(0, equipment)
 
     def remove_equipment(self, equipment):
-        self.equipment.remove(equipment)
+        if equipment in self.equipment:
+            self.equipment.remove(equipment)
 
     def set_equipment(self, equipment):
         self.equipment = list(equipment)

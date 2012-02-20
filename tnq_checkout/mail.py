@@ -129,8 +129,8 @@ def formatEquipmentList(equipment, html="", text=""):
         html += "<tr><td>%s</td><td>%s %s</td>" % (name, e.brand, e.model)
         text += "%s\t\t(%s %s)\t\t" % (name, e.brand, e.model)
         if e.last_checkout:
-            html += "<td>%s</td><td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
-            text += "%s\t\t%s\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
+            html += "<td>%s</td><td>%s</td><td>%s</td></tr>\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
+            text += "%s\t\t%s\t%s\n" % (e.last_checkout.user.full_name, _prettify_date(e.last_checkout.date_due), _prettify_date(e.last_checkout.date_in))
         else:
             html += "<td></td><td><i>Never!</i></td></tr>\n"
             text += "\t\tNever\n"

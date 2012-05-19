@@ -111,7 +111,7 @@ class Equipment(Entity):
     current_checkout = OneToOne('Checkout', inverse='equipment', filter=lambda c: c.date_in==None)
     last_checkout = OneToOne('Checkout', inverse='equipment', viewonly=True, order_by="-date_due")
     serial = Field(String(128))
-    status = Field(Enum([u'ACTIVE', u'REPAIR', u'MISSING', u'BROKEN', u'RETURNED']))
+    status = Field(Enum([u'ACTIVE', u'SPARE', u'REPAIR', u'MISSING', u'BROKEN', u'RETURNED']))
     notes = Field(String(500))
 
     def __unicode__(self):

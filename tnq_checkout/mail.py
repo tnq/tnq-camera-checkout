@@ -247,7 +247,10 @@ def sendCheckoutEmail(staph_user,manboard_user,equipment_list):
     sendMessage(from_email, [staph_user.email, manboard_user.email], msg.as_string())
 
 def sendCheckinEmail(equipment_list,staph_user=None,old_user=None,manboard_user=None):
-    checkouts = [c for c in old_user.checkouts_active if c.equipment not in equipment_list]
+    if old_user:
+        checkouts = [c for c in old_user.checkouts_active if c.equipment not in equipment_list]
+    else:
+        checkouts = None
 
     intro = "The following equipment was just checked in%s:<br /><br />" %(" by " + staph_user.full_name if staph_user else "")
 

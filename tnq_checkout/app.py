@@ -288,6 +288,15 @@ class BorrowTask(component.Task):
             comp.call(equipment_select, model="confirm")
 
 def return_equipment(equipment, by_user=None, by_manboard_user=None):
+    # Automatically set equipment to ACTIVE if it is inventoried.
+    activated_equipment = []
+    for e in equipment:
+        if e.status not in ('ACTIVE', 'BROKEN'):
+            e.status = 'ACTIVE'
+            activated_equipment.append(e)
+    if activated_equipment:
+        mail.sendCheckinEmail(activated_equipment, staph_user=by_user, manboard_user=by_manboard_user)
+
     actually_returned_items = [e for e in equipment if e.current_checkout]
 
     key_func = lambda x: x.current_checkout.user

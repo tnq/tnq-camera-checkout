@@ -132,7 +132,14 @@ class SelectEquipment(object):
         self.equipment = list(equipment)
 
 class UnselectEquipment(SelectEquipment):
+    def __init__(self, manboard=None, staph=None):
+        super(UnselectEquipment, self).__init__(manboard, staph)
+        self.all_equipment = []
+
     def scan_equipment(self, equipment):
+        # Track the full set of equipment for inventory purposes.
+        self.all_equipment.append(equipment)
+        # Remove from the display list.
         self.remove_equipment(equipment)
 
 @presentation.render_for(SelectEquipment, model="borrow")
@@ -336,7 +343,15 @@ class InventoryTask(component.Task):
 
             missing_equipment = set(comp.call(unselect_equipment, model="inventory"))
 
+            found_equipment = set(unselect_equipment.all_equipment)
+
+            # In case we found something that was checked out, check it in.
+            return_equipment(found_equipment, by_manboard_user=manboard_user)
+
             in_equipment -= missing_equipment
+
+            out_equipment -= found_equipment
+            in_equipment += found_equipment
 
             mail.sendInventoryEmail(manboard_user, equip_type, missing_equipment, out_equipment, in_equipment)
 

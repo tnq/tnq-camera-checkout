@@ -11,7 +11,7 @@ from email.mime.multipart import MIMEMultipart
 
 from itertools import groupby
 
-from_name = "H.R.H. Grogo"
+from_name = "MIT Technique"
 from_email = "tnq-checkouts@mit.edu"
 host = "outgoing.mit.edu"
 
